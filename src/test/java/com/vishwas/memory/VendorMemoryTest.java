@@ -69,6 +69,17 @@ class VendorMemoryTest {
     }
 
     @Test
+    void severalConsolidationPassesInOneBatchCollapseToOneVersion() {
+        var v = VendorMemory.collapse(List.of(
+                new VendorMemory.BeliefVersion("a", null, "History: April 2026", List.of("f1")),
+                new VendorMemory.BeliefVersion("b", "t1", "History: May 2026", List.of("f2")),
+                new VendorMemory.BeliefVersion("c", "t2", "History: May 2026", List.of("f3")),
+                new VendorMemory.BeliefVersion("d", "t3", "Next month: September 2026", List.of())));
+        assertThat(v).extracting(VendorMemory.BeliefVersion::text).containsExactly("a", "c", "d");
+        assertThat(v.get(1).newFacts()).containsExactly("f2", "f3");
+    }
+
+    @Test
     void noObservationYetMeansNoHistory() {
         assertThat(memory.beliefHistory(SBT, Dimension.TIMING)).isEmpty();
     }

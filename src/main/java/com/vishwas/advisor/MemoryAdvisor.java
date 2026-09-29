@@ -29,6 +29,8 @@ import java.util.Optional;
 @Component
 public class MemoryAdvisor {
 
+    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(MemoryAdvisor.class);
+
     /** One ranked cause hypothesis with its evidence as the model stated it. */
     public record Hypothesis(Cause cause, String likelihood, String evidence) {
     }
@@ -59,8 +61,22 @@ public class MemoryAdvisor {
         this.props = props;
     }
 
-    public VendorAdvice advise(String gstin, String vendorName, String period, List<Mismatch> cases) {
-        String query = query(gstin, vendorName, period, cases);
+    /** One reflect, validated; missing or incomplete structured output is retried once, then the caller falls back. */
+    public VendorAdvice advise(String gstin, String vendorName, String period, List<Mismatch> cases, Map<Long, String> ledger) {
+        VendorAdvice first = adviseOnce(gstin, vendorName, period, cases, ledger);
+        if (first.error() == null) {
+            return first;
+        }
+        log.warn("Reflect for {} was incomplete ({}); retrying once", vendorName, first.error());
+        VendorAdvice second = adviseOnce(gstin, vendorName, period, cases, ledger);
+        if (second.error() != null) {
+            log.warn("Reflect for {} still incomplete ({})", vendorName, second.error());
+        }
+        return second.proposals().size() >= first.proposals().size() ? second : first;
+    }
+
+    VendorAdvice adviseOnce(String gstin, String vendorName, String period, List<Mismatch> cases, Map<Long, String> ledger) {
+        String query = query(gstin, vendorName, period, cases, ledger);
         ReflectAnswer answer = hindsight.reflect(props.hindsight().bankId(), ReflectQuery.scoped(query,
                 List.of(MemoryWriter.vendorTag(gstin)), props.advice().reflectBudget(), RESPONSE_SCHEMA,
                 props.advice().reflectMaxTokens()));
@@ -81,24 +97,65 @@ public class MemoryAdvisor {
     }
 
     /** The question for one vendor: its open cases, described from today's data only (history comes from memory). */
-    static String query(String gstin, String vendorName, String period, List<Mismatch> cases) {
+    static String query(String gstin, String vendorName, String period, List<Mismatch> cases, Map<Long, String> ledger) {
         StringBuilder q = new StringBuilder();
         q.append("Vendor: ").append(vendorName).append(" (GSTIN ").append(gstin).append("). We are reconciling the ")
                 .append(Fmt.month(period)).append(" GSTR-2B. Using ONLY this vendor's memories (past mismatches and what they ")
                 .append("turned out to be, communications and promises, Vishwas's own past recommendations and the accountant's ")
                 .append("decisions), advise on each open case below.\n")
-                .append("For each case give: category (AUTO_RESOLVE only for a pure invoice-number format difference; RECOMMEND ")
-                .append("when this vendor's history shows a likely benign cause; REQUIRE_REVIEW when ITC may be at risk, history is ")
-                .append("thin or contradictory, or promises were broken; ESCALATE for suspected duplicates, conflicting records or ")
-                .append("missing evidence), a one-line headline, cause hypotheses ranked most likely first each with evidence citing ")
-                .append("month, invoice, amount and outcome, a next step that is never a payment action, your confidence, and ")
-                .append("evidence_refs as short strings like \"Jun 2026 SBT/2026/0079 Rs 12,402 resolved 1 month late\". ")
-                .append("If this vendor has fewer than 3 past cases on the relevant dimension, say history is thin. Never use ")
-                .append("another vendor's history, even one with a similar name.\n\nOpen cases:\n");
+                .append("A CASE is one invoice number: count distinct past invoices, never facts about them.\n")
+                .append("For each case give:\n")
+                .append("- category: AUTO_RESOLVE only for a pure invoice-number format difference; RECOMMEND when this vendor's past ")
+                .append("cases on the same dimension show a consistent benign outcome; REQUIRE_REVIEW when ITC may be at risk, history ")
+                .append("is thin (fewer than 3 past cases on the dimension) or contradictory, or the vendor broke a promise; ESCALATE ")
+                .append("for suspected duplicates, conflicting records or missing evidence.\n")
+                .append("- headline: ONE sentence with this vendor's real numbers, in this style: \"Possible timing difference: this ")
+                .append("vendor's missing invoices appeared in the next GSTR-2B in 4 of 4 past cases.\" or \"Potential payment risk: ")
+                .append("this vendor has 3 past unresolved cases (Rs 42,000 exposure) and broke a written promise to file by 20 Jul 2026.\" ")
+                .append("When money is at risk, always state the rupee total of the vendor's past unresolved cases.\n")
+                .append("- cause_hypotheses ranked most likely first, each with evidence citing month, invoice, amount and outcome of PAST cases.\n")
+                .append("- next_step, never a payment action. For a likely timing difference: \"Check the next data refresh before sending ")
+                .append("a reminder; review if still unmatched.\" When money may be at risk: \"Review invoice, contract and payment status ")
+                .append("before deciding.\"\n")
+                .append("- confidence, and evidence_refs: short strings naming PAST cases and events (month, invoice, amount, outcome, and ")
+                .append("kept or broken promises with dates), never the case being judged, e.g. \"Jun 2026 SBT/2026/0079 Rs 12,402 ")
+                .append("appeared 1 month late\" or \"6 Jul 2026 letter: promised to file by 20 Jul 2026, broken\".\n")
+                .append("Never use another vendor's history, even one with a similar name.\n\nOpen cases:\n");
         for (Mismatch m : cases) {
             q.append("- case_id ").append(m.getId()).append(": ").append(describe(m)).append('\n');
         }
         return q.toString();
+    }
+
+    /**
+     * The verified ledger for one case: this vendor's past cases on the same dimension with month, invoice,
+     * amount and outcome, and what is still open. Exact numbers from the database, so memory never miscounts.
+     */
+    static String ledger(HistoryStats stats, com.vishwas.matching.Dimension dim) {
+        List<HistoryStats.PastCase> past = stats.chronological();
+        if (past.isEmpty()) {
+            return dim + ": no past cases for this vendor (history is empty).";
+        }
+        StringBuilder b = new StringBuilder(dim.name()).append(": ").append(past.size()).append(" past case")
+                .append(past.size() == 1 ? "" : "s").append(" - ");
+        List<String> items = new java.util.ArrayList<>();
+        for (HistoryStats.PastCase p : past.subList(Math.max(0, past.size() - 8), past.size())) {
+            String outcome = p.status() == com.vishwas.matching.MismatchStatus.WRITTEN_OFF
+                    ? "ITC reversed, confirmed loss " + Fmt.inr(p.confirmedLoss())
+                    : p.outcome() == null ? "still open"
+                    : p.outcome() == com.vishwas.matching.Outcome.RESOLVED_LATE ? "appeared " + p.monthsLate() + " month"
+                            + (p.monthsLate() != null && p.monthsLate() == 1 ? "" : "s") + " late"
+                    : p.outcome() == com.vishwas.matching.Outcome.UNRESOLVED_AT_RISK ? "unresolved, at risk"
+                    : p.outcome().label().toLowerCase();
+            items.add(Fmt.month(p.period()) + " " + p.invoiceNo() + " " + Fmt.inr(p.exposure()) + " " + outcome);
+        }
+        b.append(String.join("; ", items));
+        long open = past.stream().filter(p -> p.status().open()).count();
+        b.append(". Still unresolved: ").append(open).append(open == 1 ? " case" : " cases");
+        if (open > 0) {
+            b.append(" (").append(Fmt.inr(stats.openExposure())).append(" potential exposure)");
+        }
+        return b.append('.').toString();
     }
 
     static String describe(Mismatch m) {
@@ -109,7 +166,8 @@ public class MemoryAdvisor {
         String detail = switch (m.getType()) {
             case MISSING_IN_2B -> " Dated " + Fmt.day(m.getInvoiceDateBooks()) + ", ITC " + Fmt.inr(m.getItcBooks())
                     + " booked but not in GSTR-2B." + (m.getCandidatesJson() != null && m.getCandidatesJson().length() > 2
-                    ? " A possible match with a slightly different number exists in GSTR-2B (not confirmed)." : "");
+                    ? " GSTR-2B has a possible match with a slightly different number and the same date and amounts (not "
+                    + "confirmed), so a data-entry difference in our books is plausible." : "");
             case MISSING_IN_BOOKS -> " In GSTR-2B (ITC " + Fmt.inr(m.getItcGstr2b()) + ") but not booked.";
             case AMOUNT_MISMATCH -> " Books ITC " + Fmt.inr(m.getItcBooks()) + " vs GSTR-2B ITC " + Fmt.inr(m.getItcGstr2b()) + ".";
             case TAX_HEAD_MISMATCH -> " Booked as CGST+SGST vs IGST in GSTR-2B (or the reverse), same total.";
@@ -128,9 +186,16 @@ public class MemoryAdvisor {
         Map<String, Long> byInvoice = new HashMap<>();
         cases.forEach(m -> byInvoice.put(m.invoiceNo().toUpperCase(), m.getId()));
         for (JsonNode p : root.path("per_invoice")) {
-            Long id = p.path("case_id").canConvertToLong() && p.path("case_id").asLong() > 0 ? p.path("case_id").asLong()
-                    : byInvoice.get(p.path("invoice").asText("").toUpperCase());
-            if (id == null || cases.stream().noneMatch(m -> m.getId().equals(id))) {
+            long given = p.path("case_id").asLong(0);
+            if (given == 0 && p.path("case_id").isTextual()) {
+                given = parseLong(p.path("case_id").asText().replaceAll("[^0-9]", ""));
+            }
+            Long id = given > 0 ? Long.valueOf(given) : byInvoice.get(p.path("invoice").asText("").trim().toUpperCase());
+            if (id == null && cases.size() == 1 && root.path("per_invoice").size() == 1) {
+                id = cases.get(0).getId();
+            }
+            Long caseId = id;
+            if (caseId == null || cases.stream().noneMatch(m -> m.getId().equals(caseId))) {
                 continue;
             }
             Category category;
@@ -150,6 +215,14 @@ public class MemoryAdvisor {
                     text(p, "next_step"), p.path("confidence").asText(null), refs));
         }
         return out;
+    }
+
+    private static long parseLong(String digits) {
+        try {
+            return digits.isEmpty() ? 0 : Long.parseLong(digits);
+        } catch (NumberFormatException e) {
+            return 0;
+        }
     }
 
     private Optional<JsonNode> tryParse(String text) {

@@ -38,8 +38,11 @@ public final class MemoryDesign {
 
     public static final String OBSERVATIONS_MISSION = """
             Consolidate durable beliefs about how ONE vendor behaves on ONE dimension, or about one dimension \
-            across all vendors. Each belief must state the count of cases behind it and their outcomes with \
-            months (for example "missing invoices appeared in the next GSTR-2B in 4 of 4 cases, Apr-Jul 2026"), \
+            across all vendors. A CASE is one invoice number in one month: its detection, outcome, follow-ups, \
+            recommendations and decisions are all ONE case, so count distinct invoice numbers, never facts. \
+            Invoices that reached GSTR-2B on time are reliability evidence, not cases. Each belief must state the \
+            number of cases behind it and their outcomes with months (for example "missing invoices appeared in the \
+            next GSTR-2B in 4 of 4 cases, Apr-Jun 2026"), \
             note kept and broken promises, and say plainly when the history is thin (fewer than 3 cases). \
             Update a belief when a new outcome contradicts it instead of keeping the old wording. Never merge \
             vendors that have different GSTINs, even when their names look alike.""";

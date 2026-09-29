@@ -204,8 +204,8 @@ public class MemoryWriter {
         Map<String, String> meta = meta(m);
         meta.put("category", r.category());
         meta.put("cause", r.cause());
-        return item(text, r.at(), CTX_RECOMMENDATION, "rec-" + key(m) + "-" + stamp(r.at()), m.getVendorGstin(), m.getDimension(),
-                m.getType(), Fmt.period(r.at()), meta);
+        return vendorWide(item(text, r.at(), CTX_RECOMMENDATION, "rec-" + key(m), m.getVendorGstin(), m.getDimension(),
+                m.getType(), Fmt.period(r.at()), meta));
     }
 
     public MemoryItem decision(DecisionEvent d) {
@@ -216,8 +216,8 @@ public class MemoryWriter {
         Map<String, String> meta = meta(m);
         meta.put("decision", d.decision());
         meta.put("reason", d.reason());
-        return item(text, d.at(), CTX_DECISION, "decision-" + key(m) + "-" + stamp(d.recommendedAt()), m.getVendorGstin(),
-                m.getDimension(), m.getType(), Fmt.period(d.at()), meta);
+        return vendorWide(item(text, d.at(), CTX_DECISION, "decision-" + key(m), m.getVendorGstin(),
+                m.getDimension(), m.getType(), Fmt.period(d.at()), meta));
     }
 
     public MemoryItem judged(JudgedEvent j) {
@@ -228,8 +228,8 @@ public class MemoryWriter {
                 + Fmt.day(j.at()) + ").";
         Map<String, String> meta = meta(m);
         meta.put("recommendation_correct", String.valueOf(j.correct()));
-        return item(text, j.at(), CTX_RECOMMENDATION, "rec-judged-" + key(m) + "-" + stamp(j.recommendedAt()), m.getVendorGstin(),
-                m.getDimension(), m.getType(), Fmt.period(j.at()), meta);
+        return vendorWide(item(text, j.at(), CTX_RECOMMENDATION, "rec-judged-" + key(m), m.getVendorGstin(),
+                m.getDimension(), m.getType(), Fmt.period(j.at()), meta));
     }
 
     // ---------------------------------------------------------------- reliable behaviour
@@ -239,8 +239,8 @@ public class MemoryWriter {
                 + " invoice" + (v.booked() == 1 ? "" : "s") + " booked, " + v.onTime() + " appeared in the " + Fmt.month(v.period())
                 + " GSTR-2B on time" + (v.mismatches().isEmpty() ? " with no mismatches." : "; mismatches: "
                 + String.join(", ", v.mismatches()) + ".");
-        return item(text, v.at(), CTX_DETECTED, "summary-" + v.gstin().toLowerCase() + "-" + v.period(), v.gstin(),
-                Dimension.TIMING, null, v.period(), new LinkedHashMap<>(Map.of("period", v.period(), "summary", "true")));
+        return vendorWide(item(text, v.at(), CTX_DETECTED, "summary-" + v.gstin().toLowerCase() + "-" + v.period(), v.gstin(),
+                Dimension.TIMING, null, v.period(), new LinkedHashMap<>(Map.of("period", v.period(), "summary", "true"))));
     }
 
     // ---------------------------------------------------------------- plumbing
@@ -263,6 +263,16 @@ public class MemoryWriter {
         return new MemoryItem(text, iso(at), context, documentId, tags, meta, scopes(gstin, dim),
                 List.of(new MemoryItem.EntityInput(legalName(gstin), "ORGANIZATION"), new MemoryItem.EntityInput(gstin, "GSTIN")),
                 false, null);
+    }
+
+    /**
+     * Learning-loop facts (recommendations, decisions, judged recommendations) and monthly summaries keep their
+     * dimension tag for recall, but consolidate only into the vendor-wide belief. The vendor+dimension belief is
+     * formed from what actually happened to invoices, so it never counts one invoice's many facts as many cases.
+     */
+    static MemoryItem vendorWide(MemoryItem i) {
+        return new MemoryItem(i.content(), i.timestamp(), i.context(), i.documentId(), i.tags(), i.metadata(),
+                List.of(List.of(i.tags().get(0))), i.entities(), i.resolveEntities(), i.updateMode());
     }
 
     /** Beliefs per vendor, per vendor+dimension, and per dimension across all vendors. */

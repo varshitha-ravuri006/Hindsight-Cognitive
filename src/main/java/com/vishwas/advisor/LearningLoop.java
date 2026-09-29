@@ -44,7 +44,13 @@ public class LearningLoop {
         }
         Map<Long, Mismatch> byId = new java.util.HashMap<>();
         judged.forEach(m -> byId.put(m.getId(), m));
+        // Only the latest recommendation per case counts: re-running advice must not multiply the track record.
+        Map<Long, Recommendation> latest = new java.util.HashMap<>();
         for (Recommendation r : recommendations.unjudgedFor(byId.keySet())) {
+            latest.merge(r.getMismatchId(), r, (a, b) -> b.getCreatedAt().isAfter(a.getCreatedAt())
+                    || (b.getCreatedAt().equals(a.getCreatedAt()) && b.getId() > a.getId()) ? b : a);
+        }
+        for (Recommendation r : latest.values()) {
             Mismatch m = byId.get(r.getMismatchId());
             if (m.getVerdict() == null) {
                 continue;

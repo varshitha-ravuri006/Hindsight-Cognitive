@@ -102,13 +102,30 @@ public class VendorMemory {
         for (int i = 0; i < changes.size(); i++) {
             ObservationChange c = changes.get(i);
             String becameAt = i == 0 ? null : changes.get(i - 1).changedAt();
-            versions.add(new BeliefVersion(c.previousText(), becameAt, i == 0 ? firstLabel(log) : labelFor(becameAt, log),
+            // the first version existed before the first change: label it by the batch running at that change
+            versions.add(new BeliefVersion(c.previousText(), becameAt, i == 0 ? labelBefore(c.changedAt(), log) : labelFor(becameAt, log),
                     i == 0 ? List.of() : newFacts(changes.get(i - 1))));
         }
         String lastChange = changes.isEmpty() ? null : changes.get(changes.size() - 1).changedAt();
         versions.add(new BeliefVersion(current.text(), lastChange, changes.isEmpty() ? firstLabel(log) : labelFor(lastChange, log),
                 changes.isEmpty() ? List.of() : newFacts(changes.get(changes.size() - 1))));
-        return Optional.of(new BeliefHistory(current.id(), dim.name(), current.text(), versions));
+        return Optional.of(new BeliefHistory(current.id(), dim.name(), current.text(), collapse(versions)));
+    }
+
+    /** Several consolidation passes within one batch become one version: the belief as that month left it. */
+    static List<BeliefVersion> collapse(List<BeliefVersion> versions) {
+        List<BeliefVersion> out = new ArrayList<>();
+        for (BeliefVersion v : versions) {
+            if (!out.isEmpty() && java.util.Objects.equals(out.get(out.size() - 1).becauseOf(), v.becauseOf())) {
+                BeliefVersion prev = out.remove(out.size() - 1);
+                List<String> facts = new ArrayList<>(prev.newFacts());
+                v.newFacts().stream().filter(f -> !facts.contains(f)).forEach(facts::add);
+                out.add(new BeliefVersion(v.text(), v.changedAt(), v.becauseOf(), facts));
+            } else {
+                out.add(v);
+            }
+        }
+        return out;
     }
 
     private static List<String> newFacts(ObservationChange c) {
@@ -132,6 +149,21 @@ public class VendorMemory {
             }
         }
         return best == null ? log.get(0).getLabel() : best.getLabel();
+    }
+
+    /** The batch before the one running at {@code changedAt}: the version that change replaced was formed then. */
+    static String labelBefore(String changedAt, List<MemoryBatch> log) {
+        Instant at = parse(changedAt);
+        if (at == null || log.isEmpty()) {
+            return null;
+        }
+        int index = -1;
+        for (int i = 0; i < log.size(); i++) {
+            if (!log.get(i).getStartedAt().isAfter(at)) {
+                index = i;
+            }
+        }
+        return log.get(Math.max(0, index - 1)).getLabel();
     }
 
     private static String firstLabel(List<MemoryBatch> log) {

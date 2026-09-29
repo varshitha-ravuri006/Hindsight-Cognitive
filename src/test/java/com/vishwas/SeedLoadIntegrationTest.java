@@ -172,7 +172,10 @@ class SeedLoadIntegrationTest {
             assertThat(i.path("context").asText()).isIn("mismatch detected", "accountant action", "vendor communication",
                     "mismatch outcome", "vishwas recommendation", "accountant decision");
             assertThat(i.path("tags").toString()).contains("vendor:").contains("dim:");
-            assertThat(i.path("observation_scopes")).hasSize(3);
+            boolean learningLoop = i.path("context").asText().equals("vishwas recommendation")
+                    || i.path("context").asText().equals("accountant decision")
+                    || i.path("document_id").asText().startsWith("summary-");
+            assertThat(i.path("observation_scopes")).hasSize(learningLoop ? 1 : 3);
             assertThat(i.path("resolve_entities").asBoolean(true)).isFalse();
             assertThat(i.path("entities").get(1).path("type").asText()).isEqualTo("GSTIN");
         });

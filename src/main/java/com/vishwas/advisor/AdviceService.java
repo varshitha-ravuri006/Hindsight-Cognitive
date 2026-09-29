@@ -49,6 +49,7 @@ public class AdviceService {
     private final RecommendationRepository recommendations;
     private final AdviceRunRepository runs;
     private final VendorRepository vendors;
+    private final com.vishwas.outcomes.VendorCommunicationRepository communications;
     private final MemoryWriter writer;
     private final MemoryPublisher publisher;
     private final ExecutorService io;
@@ -58,7 +59,8 @@ public class AdviceService {
     private final CategoryPolicy policy;
 
     public AdviceService(MemoryAdvisor memoryAdvisor, BaselineAdvisor baseline, VendorHistoryService history,
-                         RecommendationRepository recommendations, AdviceRunRepository runs, VendorRepository vendors, MemoryWriter writer, MemoryPublisher publisher, ExecutorService ioExecutor,
+                         RecommendationRepository recommendations, AdviceRunRepository runs, VendorRepository vendors,
+                         com.vishwas.outcomes.VendorCommunicationRepository communications, MemoryWriter writer, MemoryPublisher publisher, ExecutorService ioExecutor,
                          VishwasProperties props, ObjectMapper json, Clock clock) {
         this.memoryAdvisor = memoryAdvisor;
         this.baseline = baseline;
@@ -66,6 +68,7 @@ public class AdviceService {
         this.recommendations = recommendations;
         this.runs = runs;
         this.vendors = vendors;
+        this.communications = communications;
         this.writer = writer;
         this.publisher = publisher;
         this.io = ioExecutor;
@@ -124,7 +127,9 @@ public class AdviceService {
                     try {
                         permits.acquire();
                         try {
-                            advice = memoryAdvisor.advise(gstin, name, period, entry.getValue());
+                            Map<Long, String> ledger = new LinkedHashMap<>();
+                            entry.getValue().forEach(m -> ledger.put(m.getId(), MemoryAdvisor.ledger(history.historyFor(m), m.getDimension())));
+                            advice = memoryAdvisor.advise(gstin, name, period, entry.getValue(), ledger);
                         } finally {
                             permits.release();
                         }
@@ -140,8 +145,12 @@ public class AdviceService {
                     }
                 }
                 for (Mismatch m : entry.getValue()) {
-                    Recommendation r = recommend(runId, m, advice);
-                    if (r.getSource() == Recommendation.Source.MEMORY) {
+                    Recommendation r = recommend(runId, m, advice, period);
+                    // Remember a case's recommendation once. Re-running advice must not rewrite (replace) the facts that
+                    // the vendor's beliefs were consolidated from, or Hindsight rebuilds those beliefs from scratch.
+                    boolean firstForCase = recommendations.findByMismatchIdOrderByCreatedAtAsc(m.getId()).stream()
+                            .filter(x -> x.getSource() == Recommendation.Source.MEMORY).count() == 1;
+                    if (r.getSource() == Recommendation.Source.MEMORY && firstForCase) {
                         remembered.add(writer.recommendation(new MemoryWriter.RecommendationEvent(r.getCreatedAt(), m,
                                 r.getCategory().name(), r.getTopCause() == null ? "UNKNOWN" : r.getTopCause().name(),
                                 r.getHeadline(), r.getNextStep(), r.getRuleId())));
@@ -179,7 +188,7 @@ public class AdviceService {
     }
 
     /** One case: memory proposal (if any) -> guardrails -> confidence -> stored recommendation. */
-    Recommendation recommend(long runId, Mismatch m, MemoryAdvisor.VendorAdvice advice) {
+    Recommendation recommend(long runId, Mismatch m, MemoryAdvisor.VendorAdvice advice, String viewPeriod) {
         HistoryStats stats = history.historyFor(m);
         Confidence confidence = Confidence.of(stats, props.advice().thinHistoryCases());
         MemoryAdvisor.CaseProposal proposal = advice == null ? null : advice.proposals().get(m.getId());
@@ -199,13 +208,35 @@ public class AdviceService {
         } else {
             String nextStep = CategoryPolicy.mentionsPaymentAction(proposal.nextStep())
                     ? "Review the invoice, contract and payment status before deciding." : proposal.nextStep();
-            String headline = proposal.headline() != null ? proposal.headline()
-                    : proposal.hypotheses().isEmpty() ? null : proposal.hypotheses().get(0).evidence();
+            // Memory chose the category and cause; the numbers in the headline come from the verified ledger.
+            // The vendor's picture as of this month (the same for every case of the vendor), not just older cases.
+            HistoryStats asOfNow = history.historyFor(m.getVendorGstin(), m.getDimension(), null, viewPeriod);
+            boolean carried = viewPeriod != null && m.getPeriod().compareTo(viewPeriod) < 0;
+            String headline = Headlines.compose(decision.category(), proposal.topCause(), m.getType(), m.getDimension(),
+                    m.getExposure(), m.invoiceNo(), asOfNow, brokenPromise(m.getVendorGstin()), firstCandidate(m),
+                    carried ? (int) java.time.temporal.ChronoUnit.MONTHS.between(java.time.YearMonth.parse(m.getPeriod()),
+                            java.time.YearMonth.parse(viewPeriod)) : null);
             r.describe(headline, nextStep, proposal.topCause(), toJson(proposal.hypotheses()), toJson(proposal.evidenceRefs()),
                     toJson(facts(advice.facts())), toJson(decision.guardrails()), advice.vendorSummary(), decision.rule());
         }
         r.confidence(confidence, proposal == null ? null : proposal.confidence());
         return recommendations.save(r);
+    }
+
+    private String firstCandidate(Mismatch m) {
+        if (m.getCandidatesJson() == null) {
+            return null;
+        }
+        java.util.regex.Matcher x = java.util.regex.Pattern.compile("\"invoiceNo\":\"([^\"]+)\"").matcher(m.getCandidatesJson());
+        return x.find() ? x.group(1) : null;
+    }
+
+    /** The promised date of the vendor's most recent broken promise, if any. */
+    private java.time.LocalDate brokenPromise(String gstin) {
+        return communications.findByVendorGstinOrderByOccurredAtAsc(gstin).stream()
+                .filter(c -> c.getPromiseStatus() == com.vishwas.outcomes.VendorCommunication.PromiseStatus.BROKEN)
+                .map(com.vishwas.outcomes.VendorCommunication::getPromiseBy)
+                .reduce((a, b) -> b).orElse(null);
     }
 
     private void progress(long runId, int done) {

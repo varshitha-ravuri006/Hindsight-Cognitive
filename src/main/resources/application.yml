@@ -68,7 +68,7 @@ vishwas:
     reflect-budget: ${REFLECT_BUDGET:low}
     reflect-max-tokens: 3000
     # Vendors reflected on concurrently.
-    parallelism: 6
+    parallelism: 12
   auto-resolve:
     # Deterministic rules the finance team has explicitly approved for AUTO_RESOLVE.
     approved-rules: FORMAT_ONLY
