@@ -23,8 +23,8 @@ dependencies may point, and how to add things safely.
 
 | Package      | Owns                                                                                     | May depend on |
 |--------------|------------------------------------------------------------------------------------------|---------------|
-| `ingest`     | Vendor master, GSTIN validation, purchase-register CSV and simplified GSTR-2B JSON parsing, stored invoice rows per period | `config` |
-| `matching`   | Invoice-number normaliser, deterministic matcher (exact + fuzzy candidates, all mismatch types), `Mismatch` entity, reconciliation run | `ingest` |
+| `ingest`     | Vendor master, GSTIN validation, invoice-number normaliser (applied at import), purchase-register CSV and simplified GSTR-2B JSON parsing, stored invoice rows per period | `config` |
+| `matching`   | Deterministic matcher (exact + fuzzy candidates, all mismatch types), `Mismatch` entity, reconciliation run | `ingest` |
 | `outcomes`   | Outcome detector (judges open mismatches when a later GSTR-2B arrives), money calculations (exposure vs confirmed loss vs recovered) | `matching`, `ingest` |
 | `memory`     | Everything Hindsight: the REST client (`memory.hindsight`), bank design (missions, directives, mental models), memory writer, history loader, vendor beliefs and observation history, curation, knowledge pages | `ingest`, `matching`, `outcomes` (read-only) |
 | `advisor`    | Category policy (four decision categories), confidence, vendor dimension profiles, memory advisor (parallel reflect), textbook fallback, no-memory baseline | `matching`, `outcomes`, `memory`, `llm` |
