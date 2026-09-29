@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Structured logging: readable lines locally; one JSON object per line when LOG_FORMAT=json (production),
+  including MDC keys such as requestId.
+-->
+<configuration>
+    <statusListener class="ch.qos.logback.core.status.NopStatusListener"/>
+    <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
+    <springProperty scope="context" name="appName" source="spring.application.name" defaultValue="vishwas"/>
+    <springProperty scope="context" name="logFormat" source="LOG_FORMAT" defaultValue="text"/>
+
+    <appender name="OUT_text" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{HH:mm:ss.SSS} %-5level [%X{requestId:-}] %logger{24} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="OUT_json" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+            <customFields>{"app":"${appName}"}</customFields>
+        </encoder>
+    </appender>
+
+    <root level="INFO">
+        <appender-ref ref="OUT_${logFormat}"/>
+    </root>
+</configuration>
