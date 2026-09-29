@@ -24,6 +24,8 @@ public interface RecommendationRepository extends JpaRepository<Recommendation, 
             + "from Recommendation r where r.wasCorrect is not null group by r.category")
     List<Object[]> accuracyByCategory();
 
-    @Query("select r from Recommendation r where r.wasCorrect is null and r.predictedOutcome is not null and r.mismatchId in :ids")
+    /** Only memory-based recommendations count towards Vishwas's track record; textbook fallbacks do not. */
+    @Query("select r from Recommendation r where r.wasCorrect is null and r.predictedOutcome is not null "
+            + "and r.source = com.vishwas.advisor.Recommendation.Source.MEMORY and r.mismatchId in :ids")
     List<Recommendation> unjudgedFor(Collection<Long> ids);
 }

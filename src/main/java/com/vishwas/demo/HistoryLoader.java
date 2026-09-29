@@ -309,10 +309,21 @@ public class HistoryLoader {
         int broken = (int) comms.stream().filter(c -> c.getPromiseStatus() == VendorCommunication.PromiseStatus.BROKEN).count();
         Instant liveStart = cycleAt(SeedCatalog.HISTORY_PERIODS.get(SeedCatalog.HISTORY_PERIODS.size() - 1)).plus(java.time.Duration.ofDays(31));
         int recs = (int) recommendations.findAll().stream().filter(r -> r.getCreatedAt().isBefore(liveStart)).count();
-        BigDecimal open = history.stream().filter(m -> m.getStatus().open()).map(Mismatch::getExposure).reduce(BigDecimal.ZERO, BigDecimal::add);
-        BigDecimal loss = history.stream().map(Mismatch::getConfirmedLoss).reduce(BigDecimal.ZERO, BigDecimal::add);
-        BigDecimal recovered = history.stream().filter(m -> m.getStatus() == MismatchStatus.RESOLVED)
-                .map(Mismatch::getRecoveredAmount).reduce(BigDecimal.ZERO, BigDecimal::add);
+        // As of the end of the history window, so later months never rewrite what Step 1 says.
+        BigDecimal open = BigDecimal.ZERO;
+        BigDecimal loss = BigDecimal.ZERO;
+        BigDecimal recovered = BigDecimal.ZERO;
+        for (Mismatch m : history) {
+            boolean resolvedThen = m.getVerdict() != null && m.getVerdict().terminal() && m.getVerdictAt() != null
+                    && m.getVerdictAt().isBefore(liveStart);
+            if (m.getStatus() == MismatchStatus.WRITTEN_OFF) {
+                loss = loss.add(m.getConfirmedLoss());
+            } else if (resolvedThen) {
+                recovered = recovered.add(m.getRecoveredAmount());
+            } else {
+                open = open.add(m.getExposure());
+            }
+        }
         int vendorsWithIssues = (int) history.stream().map(Mismatch::getVendorGstin).distinct().count();
         String line = "Apr to Jul 2026: " + invoices + " invoices, " + history.size() + " mismatches across " + vendorsWithIssues
                 + " vendors, " + comms.size() + " vendor messages (" + kept + " promises kept, " + broken + " broken), "

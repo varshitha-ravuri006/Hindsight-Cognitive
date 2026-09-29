@@ -160,6 +160,11 @@ public class ReconcileService {
                 m.getVerdict().name(), m.getVerdict().label(), m.getMonthsLate(), m.getVerdictNote(), m.getExposure(), m.getRecoveredAmount());
     }
 
+    /** Verdicts reached when this period's GSTR-2B was processed (Step 4 after a reload). */
+    public List<VerdictView> verdicts(String period) {
+        return mismatches.findByVerdictPeriod(period).stream().filter(m -> m.getVerdict() != null).map(ReconcileService::view).toList();
+    }
+
     /** This period's mismatches plus open ones carried forward from earlier periods. */
     public List<Mismatch> casesInView(String period) {
         List<Mismatch> carried = mismatches.findByStatusInOrderByPeriodAscIdAsc(List.of(MismatchStatus.OPEN, MismatchStatus.AT_RISK))

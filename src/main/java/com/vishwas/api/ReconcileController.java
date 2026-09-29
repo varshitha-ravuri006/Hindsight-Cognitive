@@ -89,6 +89,12 @@ public class ReconcileController {
                 file(books, SeedCatalog.BOOKS_FILE, () -> seed.books(period)));
     }
 
+    @GetMapping("/periods/{period}/verdicts")
+    public java.util.List<ReconcileService.VerdictView> verdicts(@PathVariable String period) {
+        YearMonth.parse(period);
+        return reconcile.verdicts(period);
+    }
+
     private static ReconcileService.FileInput file(MultipartFile upload, String defaultName, java.util.function.Supplier<byte[]> sample)
             throws IOException {
         if (upload != null && !upload.isEmpty()) {
