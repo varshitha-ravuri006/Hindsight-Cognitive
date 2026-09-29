@@ -34,7 +34,7 @@ dependencies may point, and how to add things safely.
 | `web`        | Static frontend (`src/main/resources/static`: vanilla JS + marked) and web-only endpoints | `api` |
 | `config`     | `VishwasProperties` (all tunables), beans, `DATABASE_URL` translation | - |
 | `llm`        | Groq client (JSON validation, one retry, graceful fallback; function calling) | `config` |
-| `demo`       | Seed data loading, one-click reset, snapshot record/replay for offline demos | anything (demo glue only) |
+| `demo`       | Seed data loading, one-click reset, snapshot store for the offline replay | anything (demo glue only) |
 
 Dependencies point **down the table only** (`api` → `assistant` → `workflow` → `advisor` → `outcomes` →
 `matching` → `ingest`). If you need something "upward", publish a small interface in the lower module
@@ -52,6 +52,31 @@ and implement it above, or move the shared type down.
 - Memory design (missions, directives, mental models): `memory/MemoryDesign.java`. Tune wording there.
 - Tunables (tolerances, at-risk months, materiality, approved auto-resolve rules): `application.yml`
   under `vishwas.*`, mirrored in `config/VishwasProperties.java`.
+
+## Frontend (`src/main/resources/static`)
+
+No build step: ES modules loaded by `index.html`, `marked` from jsDelivr, styles in `css/app.css` (light and dark
+through CSS variables). One module per surface:
+
+| Module | Surface |
+|---|---|
+| `js/api.js` | every request (timeouts, JSON errors), recording and offline replay |
+| `js/steps.js` | Steps 1 to 3 (history, reconcile, Money at risk) |
+| `js/nextmonth.js` | Step 4 (next GSTR-2B, live consolidation indicator) |
+| `js/brief.js`, `js/workbench.js` | investigation brief and "Work this case" |
+| `js/vendor.js`, `js/curation.js` | vendor profile, knowledge page, letters, "Correct this history" |
+| `js/actions.js`, `js/assistant.js`, `js/close.js` | Action center, Assistant, Month-end close tabs |
+| `js/drawer.js` | "What Vishwas remembered" drawer |
+
+The Reconcile tab (Steps 1 to 4) is the demo path: keep it calm and unchanged; new features go into the brief, the
+vendor profile, the drawer or a tab. Frontend tests: `node --test src/test/js/api-replay.test.mjs` (`npm run test:js`).
+
+## Scripts and demo tooling
+
+- `scripts/prepare-demo` / `scripts/prepare-demo.ps1`: reset the demo bank, load history, wait for consolidation,
+  print READY (see the README's demo-day checklist).
+- ⋯ menu: **Record this run** / **Stop and save recording** writes `data/snapshot-<bank>.json`;
+  **Play offline replay** serves the whole UI from it. `GET /api/snapshot/info` says whether one exists.
 
 ## Working on a module
 
