@@ -9,8 +9,9 @@ spring:
       enabled: true
   datasource:
     # File-backed so reconciliations survive restarts and stay in step with what Hindsight remembers.
+    # One file per memory bank (data/vishwas-dev, data/vishwas-demo): the database always matches its bank.
     # Production: set DATABASE_URL (postgres://user:pass@host:5432/db) - see DatabaseUrlConfig.
-    url: jdbc:h2:file:./data/vishwas;AUTO_SERVER=TRUE
+    url: jdbc:h2:file:./data/${HINDSIGHT_BANK_ID:vishwas-dev};AUTO_SERVER=TRUE
     username: sa
     password: ""
   jpa:

@@ -12,13 +12,15 @@ export async function nextMonth() {
     const btn = $("#next-month");
     btn.disabled = true;
     $("#next-month-result").innerHTML = `<div style="margin-top:14px">${skeletonLines(4)}</div>`;
+    // Snapshot today's beliefs in parallel, so the "before" is what memory believed after August.
+    const candidates = beliefTargets(state.workspace);
+    const before = snapshotBeliefs(candidates);
     try {
         const r = await api(`/api/periods/${state.nextPeriod}/next-month`, { method: "POST", timeoutMs: 90000 });
         state.status.imported = [...new Set([...(state.status.imported || []), state.nextPeriod + ":GSTR2B"])];
-        render(r);
-        await loadWorkspace();
-        document.dispatchEvent(new CustomEvent("vishwas:changed"));
-        if (r.memoryOn) watchBeliefs(r);
+        render(r);                       // instant: verdicts and dimension cards come from the ledger
+        loadWorkspace().then(() => document.dispatchEvent(new CustomEvent("vishwas:changed"))).catch(() => {});
+        if (r.memoryOn) watchConsolidation(r, candidates, before);
     } catch (e) {
         banner(e.message);
         $("#next-month-result").innerHTML = "";
@@ -54,9 +56,11 @@ function render(r) {
             <p class="note">Dimension cards before and after this GSTR-2B. Highlighted cards changed.</p>
             ${r.vendors.map(vendorChange).join("") || "<p class='muted'>No vendor profile changed.</p>"}
         </section>
-        ${r.memoryOn ? `<section style="margin-top:14px" id="belief-live"><h3>Memory is updating its beliefs</h3>
-            <p class="note">Hindsight consolidates the new outcomes into observations in the background.</p>
-            <div id="belief-live-body">${skeletonLines(2)}</div></section>` : ""}`;
+        ${r.memoryOn ? `<section style="margin-top:14px" id="belief-live">
+            <h3><span class="pulse-dot"></span> <span id="consolidation-title">Memory consolidating…</span>
+                <span class="muted small" id="consolidation-timer">0:00</span></h3>
+            <p class="note" id="consolidation-stage">Sending the September outcomes to Hindsight.</p>
+            <div id="belief-live-body"></div></section>` : ""}`;
 }
 
 function verdictList(verdicts) {
@@ -95,33 +99,94 @@ function vendorChange(v) {
         </div></div>`;
 }
 
-/** Poll the belief history of the vendor whose view should move most, until memory has consolidated. */
-async function watchBeliefs(r) {
-    const target = r.vendors.find(v => v.changedDimensions.includes("TIMING")) || r.vendors[0];
-    if (!target) return;
-    const dim = target.changedDimensions.includes("TIMING") ? "TIMING" : target.changedDimensions[0];
-    const body = () => document.getElementById("belief-live-body");
-    let initial = null;
-    const deadline = Date.now() + 4 * 60 * 1000;
-    while (Date.now() < deadline && body()) {
-        try {
-            const res = await api(`/api/vendors/${encodeURIComponent(target.gstin)}/belief-history?dimension=${dim}`, { timeoutMs: 30000 });
-            const hist = res.history;
-            const text = hist ? hist.current : null;
-            if (initial === null) initial = text || "";
-            if (text && text !== initial) {
-                body().innerHTML = `<p><strong>${h(target.vendor)} · ${h(DIMENSION_LABEL[dim])}</strong></p>
-                    <div class="belief"><div class="when">Before</div>${h(initial || "No belief yet.")}</div>
-                    <div class="belief current"><div class="when">Now</div>${h(text)}</div>`;
-                return;
-            }
-            body().innerHTML = `<p class="note">Waiting for Hindsight to consolidate ${h(target.vendor)}'s ${h(DIMENSION_LABEL[dim].toLowerCase())}…</p>
-                ${text ? `<div class="belief"><div class="when">Current belief</div>${h(text)}</div>` : ""}`;
-        } catch (e) {
-            if (body()) body().innerHTML = `<p class="note">Memory did not answer: ${h(e.message)}</p>`;
-            return;
-        }
-        await new Promise(res => setTimeout(res, 6000));
+/** Vendors whose belief should move: those with open cases now, strictest and largest first (max 3). */
+function beliefTargets(ws) {
+    if (!ws) return [];
+    const picks = [];
+    for (const g of ws.vendors) {
+        const open = g.rows.filter(r => (r.status === "OPEN" || r.status === "AT_RISK") && Number(r.exposure) > 0);
+        if (!open.length) continue;
+        const main = open.find(r => r.dimension === "TIMING") || open[0];
+        const timingCall = open.some(r => r.category === "RECOMMEND" && r.topCause === "TIMING_DIFFERENCE");
+        picks.push({ gstin: g.gstin, vendor: g.name, dimension: main.dimension, timingCall, exposure: Number(g.exposure) });
     }
-    if (body()) body().innerHTML += `<p class="note">Consolidation is still running; open the vendor profile later to see the updated belief.</p>`;
+    // The "gets smarter" story first (a timing call the next GSTR-2B will confirm), then the money at risk.
+    return picks.filter(p => p.dimension !== "DUPLICATES" && p.dimension !== "INVOICE_FORMAT")
+        .sort((a, b) => (b.timingCall - a.timingCall) || (b.exposure - a.exposure)).slice(0, 3);
+}
+
+function snapshotBeliefs(targets) {
+    return Promise.all(targets.map(t => api(`/api/vendors/${encodeURIComponent(t.gstin)}/belief-history?dimension=${t.dimension}`, { timeoutMs: 30000 })
+        .then(r => ({ ...t, history: r.history }))
+        .catch(() => ({ ...t, history: null }))));
+}
+
+const STAGE_TEXT = {
+    EXTRACTING: "Extracting facts from the September outcomes…",
+    CONSOLIDATING: "Consolidating the new facts into each vendor's beliefs…",
+    REFRESHING_MODELS: "Beliefs updated. Refreshing the Money-at-risk briefing and Vendor watchlist…",
+    SETTLED: "Memory is up to date.",
+    OFF: "Memory is off.",
+};
+
+/** Poll Hindsight's operations until memory has digested September, then swap in the updated beliefs. */
+async function watchConsolidation(r, candidates, beforePromise) {
+    const since = r.memorySubmittedAt;
+    const started = Date.now();
+    const timer = setInterval(() => {
+        const el = document.getElementById("consolidation-timer");
+        if (!el) return clearInterval(timer);
+        el.textContent = clock(Date.now() - started);
+    }, 1000);
+    const deadline = started + 15 * 60 * 1000;
+    let status = null;
+    try {
+        while (Date.now() < deadline && document.getElementById("belief-live")) {
+            try {
+                status = await api(`/api/memory/settle?since=${encodeURIComponent(since)}`, { timeoutMs: 20000 });
+                const stage = document.getElementById("consolidation-stage");
+                if (stage) stage.textContent = STAGE_TEXT[status.stage] || status.message;
+                if (status.stage === "SETTLED" || status.stage === "OFF") break;
+            } catch { /* transient: keep polling */ }
+            await new Promise(res => setTimeout(res, 3000));
+        }
+    } finally {
+        clearInterval(timer);
+    }
+    const title = document.getElementById("consolidation-title");
+    if (!title) return;
+    const took = clock(Date.now() - started);
+    if (!status || status.stage !== "SETTLED") {
+        title.textContent = "Memory is still consolidating";
+        document.getElementById("consolidation-stage").textContent = "This is taking longer than usual; open a vendor profile later to see the updated belief.";
+        return;
+    }
+    title.textContent = `Memory consolidated in ${took}`;
+    document.querySelector("#belief-live .pulse-dot")?.classList.add("done");
+    const before = await beforePromise;
+    const changed = new Set(r.vendors.map(v => v.gstin));
+    const targets = before.filter(b => changed.has(b.gstin));
+    const after = await snapshotBeliefs(targets);
+    document.getElementById("belief-live-body").innerHTML = (after.map((a, i) => beliefSwap(targets[i], a)).join("")
+        || `<p class="note">No vendor belief changed.</p>`)
+        + `<p class="note">These are memory's own words. Exact case counts and amounts are on the dimension cards above, from the ledger.</p>`;
+    document.dispatchEvent(new CustomEvent("vishwas:changed"));
+}
+
+function beliefSwap(before, after) {
+    const was = before.history?.current;
+    const now = after.history?.current;
+    const newest = after.history?.versions?.[after.history.versions.length - 1];
+    return `<div class="vendor-group" style="padding:12px 14px">
+        <h3>${h(after.vendor)} <span class="muted small">· ${h(DIMENSION_LABEL[after.dimension] || after.dimension)}</span></h3>
+        <div class="before-after" style="margin-top:8px">
+            <div class="belief"><div class="when">What memory believed after August</div>${h(was || "No belief yet.")}</div>
+            <div class="belief current"><div class="when">Now${newest?.becauseOf ? " · new entry: " + h(newest.becauseOf) : ""}</div>
+                ${now && now !== was ? h(now) : h(now || "No belief yet.") + (now === was ? " <span class='muted small'>(unchanged)</span>" : "")}</div>
+        </div></div>`;
+}
+
+function clock(ms) {
+    const s = Math.floor(ms / 1000);
+    return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
 }

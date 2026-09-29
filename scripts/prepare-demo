@@ -1,0 +1,96 @@
+#!/usr/bin/env bash
+# Prepare the live demo, ideally the evening before:
+#   1. make sure Vishwas is running against the clean demo bank (starts it if nothing is listening),
+#   2. reset the demo database and memory bank,
+#   3. load the four months of history and wait until Hindsight has consolidated it,
+#   4. print READY with the memory and observation counts and how long each stage took.
+#
+# Usage:  scripts/prepare-demo [--url http://localhost:8080] [--bank vishwas-demo] [--no-start]
+# Needs:  curl, and python3 (or python) to read JSON. Keep the machine awake while it runs (15-30 min).
+set -euo pipefail
+
+URL="http://localhost:8080"
+BANK="vishwas-demo"
+START=1
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --url) URL="$2"; shift 2 ;;
+    --bank) BANK="$2"; shift 2 ;;
+    --no-start) START=0; shift ;;
+    -h|--help) sed -n '2,10p' "$0"; exit 0 ;;
+    *) echo "Unknown option $1" >&2; exit 2 ;;
+  esac
+done
+
+cd "$(dirname "$0")/.."
+PY="$(command -v python3 || command -v python || true)"
+[ -n "$PY" ] || { echo "python3 is required to read JSON responses" >&2; exit 1; }
+json() { "$PY" -c "import sys,json; d=json.load(sys.stdin); print(eval(sys.argv[1], {}, {'d': d}))" "$1"; }
+now() { date +%s; }
+stamp() { "$PY" -c "import datetime; print(datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ'))"; }
+say() { printf '%s  %s\n' "$(date +%H:%M:%S)" "$*"; }
+fail() { say "FAILED: $*"; exit 1; }
+
+# ---------------------------------------------------------------- 1. server on the demo bank
+if ! curl -sf --max-time 5 "$URL/api/health/live" >/dev/null; then
+  [ "$START" = 1 ] || fail "nothing answers at $URL (start Vishwas with HINDSIGHT_BANK_ID=$BANK, or drop --no-start)"
+  if [ ! -f target/vishwas.jar ]; then say "Building target/vishwas.jar"; mvn -B -q package -DskipTests; fi
+  mkdir -p data
+  PORT="${URL##*:}"; PORT="${PORT%%/*}"
+  say "Starting Vishwas on port $PORT with HINDSIGHT_BANK_ID=$BANK (log: data/prepare-demo-server.log)"
+  HINDSIGHT_BANK_ID="$BANK" nohup java -jar target/vishwas.jar --server.port="$PORT" > data/prepare-demo-server.log 2>&1 &
+  for _ in $(seq 1 90); do curl -sf --max-time 3 "$URL/api/health/live" >/dev/null && break; sleep 2; done
+  curl -sf --max-time 5 "$URL/api/health/live" >/dev/null || fail "Vishwas did not start; see data/prepare-demo-server.log"
+fi
+
+for _ in $(seq 1 30); do
+  STATUS="$(curl -sf --max-time 15 "$URL/api/status")"
+  [ "$(echo "$STATUS" | json "d['memory']")" = "CONNECTING" ] || break
+  sleep 2
+done
+RUNNING_BANK="$(echo "$STATUS" | json "d['bankId']")"
+[ "$RUNNING_BANK" = "$BANK" ] || fail "Vishwas is running with bank '$RUNNING_BANK'. Restart it with HINDSIGHT_BANK_ID=$BANK."
+[ "$(echo "$STATUS" | json "d['memory']")" = "READY" ] || fail "memory is $(echo "$STATUS" | json "d['memory']"): $(echo "$STATUS" | json "d.get('memoryError')")"
+[ "$(echo "$STATUS" | json "d['baseline']")" = "READY" ] || say "Warning: the Groq baseline is not configured; the demo will show textbook actions in the grey column."
+say "Vishwas at $URL is using bank $BANK; memory READY"
+
+# ---------------------------------------------------------------- 2. reset
+RESET="$(curl -sf --max-time 240 -X POST "$URL/api/demo/reset")" || fail "reset failed"
+[ "$(echo "$RESET" | json "d['memoryCleared']")" = "True" ] || fail "reset could not clear memory: $(echo "$RESET" | json "d['message']")"
+say "Database and bank $BANK cleared"
+
+# ---------------------------------------------------------------- 3. history, then consolidation
+SINCE="$(stamp)"; T0="$(now)"
+curl -sf --max-time 30 -X POST "$URL/api/history/load" >/dev/null || fail "could not start the history load"
+LAST=""
+while :; do
+  H="$(curl -sf --max-time 30 "$URL/api/history/status" || echo '{}')"
+  LINE="$(echo "$H" | json "(d.get('memory') or {}).get('stage','') + '  ' + str((d.get('memory') or {}).get('itemsSent','')) + '/' + str((d.get('memory') or {}).get('itemsTotal',''))" 2>/dev/null || echo "")"
+  [ "$LINE" != "$LAST" ] && say "History: $LINE" && LAST="$LINE"
+  [ "$(echo "$H" | json "d.get('memoryLoaded')" 2>/dev/null)" = "True" ] && break
+  ERR="$(echo "$H" | json "d.get('error') or (d.get('memory') or {}).get('error') or ''" 2>/dev/null || echo "")"
+  [ -z "$ERR" ] || fail "history load: $ERR"
+  [ $(( $(now) - T0 )) -lt 2700 ] || fail "history load took more than 45 minutes"
+  sleep 10
+done
+T1="$(now)"
+say "History remembered in $(( T1 - T0 )) s; waiting for consolidation to settle"
+
+while :; do
+  S="$(curl -sf --max-time 30 "$URL/api/memory/settle?since=$SINCE" || echo '{"stage":"?"}')"
+  STAGE="$(echo "$S" | json "d['stage']")"
+  [ "$STAGE" = "SETTLED" ] && break
+  [ $(( $(now) - T1 )) -lt 1500 ] || fail "consolidation did not settle within 25 minutes (last stage $STAGE)"
+  sleep 15
+done
+T2="$(now)"
+
+STATUS="$(curl -sf --max-time 30 "$URL/api/status")"
+MEMORIES="$(echo "$STATUS" | json "d['memories']")"
+OBS="$(echo "$STATUS" | json "d['observations']")"
+SUMMARY="$(echo "$STATUS" | json "d['history']['summary']['line']")"
+echo
+echo "READY  bank=$BANK  memories=$MEMORIES  observations=$OBS"
+echo "       history load $(( T1 - T0 )) s, consolidation settled after a further $(( T2 - T1 )) s (total $(( T2 - T0 )) s)"
+echo "       $SUMMARY"
+echo "       Open $URL . Steps 2 to 4 run live. If you stop the server, restart it with HINDSIGHT_BANK_ID=$BANK."

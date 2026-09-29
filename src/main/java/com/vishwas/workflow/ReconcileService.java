@@ -57,7 +57,8 @@ public class ReconcileService {
 
     public record NextMonthResult(String period, List<VerdictView> verdicts, int promisesSettled, int recommendationsJudged,
                                   long recommendationsRight, List<CardChange> vendors, List<LearningLoop.Accuracy> accuracyBefore,
-                                  List<LearningLoop.Accuracy> accuracyAfter, int memoriesQueued, boolean memoryOn) {
+                                  List<LearningLoop.Accuracy> accuracyAfter, int memoriesQueued, boolean memoryOn,
+                                  Instant memorySubmittedAt) {
     }
 
     private final IngestService ingest;
@@ -121,6 +122,7 @@ public class ReconcileService {
         }
         MonthProcessor.Result r = processor.process(period, Instant.now(clock), MonthProcessor.Mode.JUDGE_ONLY, false);
         var items = monthMemory.items(r);
+        Instant submitted = Instant.now(clock).minusSeconds(1);
         publisher.publish("Next month: " + Fmt.month(period), period, items);
         if (publisher.enabled()) {
             Thread.ofVirtual().start(mentalModels::refreshAll);
@@ -139,7 +141,7 @@ public class ReconcileService {
         List<VerdictView> verdicts = r.judged().stream().map(ReconcileService::view).toList();
         long right = r.judgedRecommendations().stream().filter(com.vishwas.memory.MemoryWriter.JudgedEvent::correct).count();
         return new NextMonthResult(period, verdicts, r.promisesSettled().size(), r.judgedRecommendations().size(), right, changes,
-                accuracyBefore, learning.accuracy(), publisher.enabled() ? items.size() : 0, publisher.enabled());
+                accuracyBefore, learning.accuracy(), publisher.enabled() ? items.size() : 0, publisher.enabled(), submitted);
     }
 
     static List<String> changedDimensions(List<VendorProfileService.DimensionCard> before, List<VendorProfileService.DimensionCard> after) {

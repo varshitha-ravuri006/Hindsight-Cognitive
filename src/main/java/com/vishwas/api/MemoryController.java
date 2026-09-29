@@ -41,10 +41,11 @@ public class MemoryController {
     private final VendorRepository vendors;
     private final ObjectMapper json;
     private final ExecutorService io;
+    private final com.vishwas.memory.MemorySettlement settlement;
 
     public MemoryController(ReconcileService reconcile, AdviceService advice, VendorMemory vendorMemory, MentalModels mentalModels,
                             MemoryPublisher publisher, MemoryBatchRepository batches, VendorRepository vendors, ObjectMapper json,
-                            ExecutorService ioExecutor) {
+                            ExecutorService ioExecutor, com.vishwas.memory.MemorySettlement settlement) {
         this.reconcile = reconcile;
         this.advice = advice;
         this.vendorMemory = vendorMemory;
@@ -54,6 +55,7 @@ public class MemoryController {
         this.vendors = vendors;
         this.json = json;
         this.io = ioExecutor;
+        this.settlement = settlement;
     }
 
     @GetMapping("/drawer")
@@ -103,6 +105,15 @@ public class MemoryController {
         out.put("mentalModels", mentalModels.all());
         out.put("available", true);
         return out;
+    }
+
+    /**
+     * Has memory digested everything sent since {@code since} (ISO instant)? Polled by the Step 4 indicator and
+     * by scripts/prepare-demo. Stages: OFF, EXTRACTING, CONSOLIDATING, REFRESHING_MODELS, SETTLED.
+     */
+    @GetMapping("/settle")
+    public com.vishwas.memory.MemorySettlement.Status settle(@RequestParam String since) {
+        return settlement.status(java.time.Instant.parse(since));
     }
 
     @GetMapping("/mental-models")

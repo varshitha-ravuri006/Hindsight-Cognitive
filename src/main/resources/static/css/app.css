@@ -332,3 +332,9 @@ dialog::backdrop { background: rgba(10, 14, 20, .4); }
     .money, .files, .two-col, .before-after { grid-template-columns: 1fr; }
     .dims { grid-template-columns: 1fr; }
 }
+
+/* live consolidation indicator (Step 4) */
+.pulse-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: var(--accent);
+    margin-right: 4px; animation: breathe 1.4s ease-in-out infinite; vertical-align: middle; }
+.pulse-dot.done { background: var(--good); animation: none; }
+@keyframes breathe { 50% { opacity: .25; transform: scale(.8); } }
