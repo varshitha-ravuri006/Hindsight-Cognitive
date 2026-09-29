@@ -376,3 +376,4 @@ dialog::backdrop { background: rgba(10, 14, 20, .4); }
 .close-state { padding: 10px 14px; border-radius: 10px; margin: 8px 0 14px; font-weight: 600; }
 .close-state.ready { background: var(--good-soft); color: var(--good); }
 .close-state.blocked { background: var(--warn-soft); color: var(--warn); }
+.replay-banner button { margin-left: 8px; border: 1px solid #111; background: transparent; border-radius: 6px; padding: 1px 8px; cursor: pointer; }

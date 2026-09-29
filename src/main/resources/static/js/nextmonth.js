@@ -1,6 +1,6 @@
 // Step 4, "Next month arrives": the September GSTR-2B judges August live. Verdicts, whether Vishwas's own
 // recommendations were right, and each vendor's dimension cards before and after, with the change highlighted.
-import { api } from "./api.js";
+import { api, pace } from "./api.js";
 import { CATEGORY_LABEL, DIMENSION_LABEL, h, inr, OUTCOME_LABEL } from "./fmt.js";
 import { banner, skeletonLines } from "./ui.js";
 import { loadWorkspace, renderSteps, state } from "./steps.js";
@@ -148,7 +148,7 @@ async function watchConsolidation(r, candidates, beforePromise) {
                 if (stage) stage.textContent = STAGE_TEXT[status.stage] || status.message;
                 if (status.stage === "SETTLED" || status.stage === "OFF") break;
             } catch { /* transient: keep polling */ }
-            await new Promise(res => setTimeout(res, 3000));
+            await new Promise(res => setTimeout(res, pace(3000)));
         }
     } finally {
         clearInterval(timer);

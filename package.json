@@ -1,0 +1,9 @@
+{
+  "name": "vishwas-frontend-tests",
+  "private": true,
+  "description": "Only for the frontend's tiny test suite; the app itself is built with Maven and has no JS build step.",
+  "type": "module",
+  "scripts": {
+    "test:js": "node --test src/test/js/api-replay.test.mjs"
+  }
+}

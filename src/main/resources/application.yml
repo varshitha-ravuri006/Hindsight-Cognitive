@@ -89,7 +89,7 @@ vishwas:
   demo:
     # Allows the one-click "Reset demo" (clears the database and the configured memory bank).
     reset-enabled: ${VISHWAS_RESET_ENABLED:true}
-    snapshot-file: ./data/snapshot.json
+    snapshot-file: ./data/snapshot-${HINDSIGHT_BANK_ID:vishwas-dev}.json
 
 logging:
   level:

@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Vishwas · System health</title>
+    <link rel="stylesheet" href="/css/app.css">
+    <style>
+        .health { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; }
+        .health section { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; }
+        .health h3 { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
+        .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--muted); display: inline-block; }
+        .dot.ok { background: var(--good); } .dot.bad { background: var(--bad); } .dot.wait { background: var(--warn); }
+        dl { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; margin: 0; font-size: .9rem; }
+        dt { color: var(--muted); } dd { margin: 0; word-break: break-all; }
+    </style>
+</head>
+<body>
+<header class="topbar">
+    <div class="brand"><span class="logo" aria-hidden="true">V</span>
+        <div><div class="wordmark">Vishwas</div><div class="tagline">System health</div></div></div>
+    <div class="top-actions" style="margin-left:auto"><a class="secondary" href="/" style="text-decoration:none;padding:7px 14px">Back to Vishwas</a></div>
+</header>
+<main class="page">
+    <p class="muted" id="checked">Checking…</p>
+    <div class="health" id="health"></div>
+    <p class="note" style="margin-top:14px">Refreshes every 15 seconds. Every check has a short timeout, so this page never hangs.</p>
+</main>
+<script>
+    const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+    const card = (title, state, rows) => `<section><h3><span class="dot ${state}"></span>${esc(title)}</h3><dl>${
+        Object.entries(rows).map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join("")}</dl></section>`;
+    async function check() {
+        const ctrl = new AbortController();
+        const t = setTimeout(() => ctrl.abort(), 20000);
+        try {
+            const h = await (await fetch("/api/health", { signal: ctrl.signal })).json();
+            const hs = h.hindsight, db = h.database, g = h.groq, m = h.memoryCounts, hist = h.history || {};
+            document.getElementById("health").innerHTML = [
+                card("Hindsight (memory)", hs.configured && hs.reachable && hs.bankSetup === "READY" ? "ok" : hs.configured ? "bad" : "wait", {
+                    "Configured": hs.configured ? "yes" : "no (HINDSIGHT_API_KEY missing)", "Reachable": hs.reachable ? "yes" : "no",
+                    "Bank setup": hs.bankSetup, "Bank id": hs.bankId, "Endpoint": hs.baseUrl, "Last error": hs.error === "null" ? "none" : hs.error }),
+                card("Memory contents", m.memories != null ? "ok" : "wait", {
+                    "Memories": m.memories ?? "–", "Observations": m.observations ?? "–",
+                    "History in database": hist.databaseLoaded ? "loaded" : "not loaded", "History in memory": hist.memoryLoaded ? "loaded" : "not loaded",
+                    "Error": m.error || "none" }),
+                card("Groq (baseline, drafts, assistant)", g.configured && g.reachable ? "ok" : g.configured ? "bad" : "wait", {
+                    "Configured": g.configured ? "yes" : "no (GROQ_API_KEY missing)", "Reachable": g.reachable ? "yes" : "no", "Model": g.model }),
+                card("Database", db.reachable ? "ok" : "bad", Object.fromEntries(Object.entries(db).map(([k, v]) => [k.replaceAll("_", " "), v]))),
+            ].join("");
+            document.getElementById("checked").textContent = "Checked " + new Date().toLocaleTimeString("en-IN");
+        } catch (e) {
+            document.getElementById("health").innerHTML = card("Vishwas server", "bad", { "Status": "not answering", "Detail": e.name === "AbortError" ? "timed out after 20 s" : e.message });
+            document.getElementById("checked").textContent = "Last check failed " + new Date().toLocaleTimeString("en-IN");
+        } finally {
+            clearTimeout(t);
+        }
+    }
+    check();
+    setInterval(check, 15000);
+</script>
+</body>
+</html>

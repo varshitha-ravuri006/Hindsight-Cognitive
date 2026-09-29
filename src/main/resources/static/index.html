@@ -28,6 +28,10 @@
             <summary class="icon-btn" aria-label="More">⋯</summary>
             <div class="menu-panel">
                 <a href="/health.html" target="_blank" rel="noopener">System health</a>
+                <button id="record-start" type="button">Record this run</button>
+                <button id="record-stop" type="button" hidden>Stop and save recording</button>
+                <button id="replay-start" type="button">Play offline replay</button>
+                <button id="replay-stop" type="button" hidden>Exit replay</button>
                 <button id="reset-demo" type="button">Reset demo…</button>
             </div>
         </details>
@@ -42,7 +46,8 @@
 </nav>
 
 <div id="banners" class="banners" aria-live="assertive"></div>
-<div id="replay-banner" class="replay-banner" hidden>Offline replay of a recorded run</div>
+<div id="replay-banner" class="replay-banner" hidden>Offline replay of a recorded run <span id="replay-when"></span>
+    · nothing here is live · <button type="button" id="replay-exit-inline">Exit replay</button></div>
 
 <main id="main" class="page">
     <p class="company" id="company"></p>
