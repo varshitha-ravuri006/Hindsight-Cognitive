@@ -191,7 +191,16 @@ public class HindsightClient {
      */
     public MemoryPage listMemories(String bankId, String type, List<String> tags, String tagsMatch, String q,
                                    int limit, int offset) {
+        return listMemories(bankId, type, tags, tagsMatch, q, null, limit, offset);
+    }
+
+    /** As above, filtered by curation state ("valid" or "invalidated"; invalidated units are hidden by default). */
+    public MemoryPage listMemories(String bankId, String type, List<String> tags, String tagsMatch, String q, String state,
+                                   int limit, int offset) {
         StringBuilder path = new StringBuilder("/memories/list?limit=").append(limit).append("&offset=").append(offset);
+        if (state != null) {
+            path.append("&state=").append(enc(state));
+        }
         if (type != null) {
             path.append("&type=").append(enc(type));
         }

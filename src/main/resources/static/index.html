@@ -34,11 +34,20 @@
     </div>
 </header>
 
+<nav class="view-tabs" id="view-tabs" aria-label="Views">
+    <button class="on" data-view="reconcile">Reconcile</button>
+    <button data-view="actions">Action center</button>
+</nav>
+
 <div id="banners" class="banners" aria-live="assertive"></div>
 <div id="replay-banner" class="replay-banner" hidden>Offline replay of a recorded run</div>
 
 <main id="main" class="page">
     <p class="company" id="company"></p>
+
+    <section class="view" id="view-actions" hidden></section>
+
+    <div class="view" id="view-reconcile">
 
     <!-- Step 1 -->
     <section class="step" id="step-1" data-step="1">
@@ -139,6 +148,7 @@
         <summary>What Vishwas remembered</summary>
         <div class="drawer-body" id="drawer-body"><p class="muted">Open after reconciling to see the memories behind the advice.</p></div>
     </details>
+    </div>
 
     <footer class="footer">
         <p>Vishwas · Deccan Home Appliances Pvt Ltd (fictional sample company) · <strong>Informational only, not tax advice.</strong></p>

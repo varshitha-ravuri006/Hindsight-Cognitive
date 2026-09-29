@@ -22,11 +22,13 @@ public class DemoController {
     private final DemoService demo;
     private final SeedCatalog seed;
     private final MemoryStats stats;
+    private final com.vishwas.workflow.LetterService letters;
 
-    public DemoController(DemoService demo, SeedCatalog seed, MemoryStats stats) {
+    public DemoController(DemoService demo, SeedCatalog seed, MemoryStats stats, com.vishwas.workflow.LetterService letters) {
         this.demo = demo;
         this.seed = seed;
         this.stats = stats;
+        this.letters = letters;
     }
 
     @PostMapping("/demo/reset")
@@ -50,14 +52,14 @@ public class DemoController {
                 .body(bytes);
     }
 
+    /** A seeded letter or one uploaded in the app. */
     @GetMapping("/letters/{name}")
     public ResponseEntity<byte[]> letter(@PathVariable String name) {
-        if (!seed.hasLetter(name)) {
-            throw new java.util.NoSuchElementException("No letter " + name);
-        }
+        byte[] bytes = seed.hasLetter(name) ? seed.letter(name)
+                : letters.read(name).orElseThrow(() -> new java.util.NoSuchElementException("No letter " + name));
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + name + "\"")
                 .contentType(MediaType.APPLICATION_PDF)
-                .body(seed.letter(name));
+                .body(bytes);
     }
 }

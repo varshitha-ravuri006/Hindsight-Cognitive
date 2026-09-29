@@ -61,6 +61,7 @@ async function boot() {
         nextMonth();
     });
     $("#reset-demo").addEventListener("click", resetDemo);
+    initViews();
     document.addEventListener("vishwas:changed", async () => {
         await loadWorkspace().catch(e => banner(e.message));
         invalidateDrawer();
@@ -86,10 +87,25 @@ async function boot() {
     route();
 }
 
+/** Tabs: Reconcile (Steps 1 to 4, the default) and the Tier 2/3 views, each loaded when opened. */
+function initViews() {
+    document.querySelectorAll("#view-tabs button").forEach(b => b.addEventListener("click", () => showView(b.dataset.view)));
+}
+
+export async function showView(view) {
+    document.querySelectorAll("#view-tabs button").forEach(b => b.classList.toggle("on", b.dataset.view === view));
+    document.querySelectorAll(".view").forEach(v => v.hidden = v.id !== "view-" + view);
+    if (view === "actions") (await import("./actions.js")).showActionCenter();
+    if (view === "assistant") (await import("./assistant.js")).showAssistant();
+    if (view === "close") (await import("./close.js")).showClose();
+}
+
 /** Deep links: #case/123 opens an investigation brief, #vendor/GSTIN a vendor profile. */
 async function route() {
     const [kind, id] = location.hash.replace(/^#/, "").split("/");
-    if (kind === "case" && id) {
+    if (kind === "view" && id) {
+        showView(id);
+    } else if (kind === "case" && id) {
         const { openBrief } = await import("./brief.js");
         openBrief(Number(id), state.period);
     } else if (kind === "vendor" && id) {

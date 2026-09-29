@@ -13,8 +13,8 @@ const REASONS = [
     ["OTHER", "Other"],
 ];
 
-export async function openBrief(id, period) {
-    openPanel(`<h2 class="skeleton">Loading the brief</h2>${skeletonLines(6)}`);
+export async function openBrief(id, period, { onClose } = {}) {
+    openPanel(`<h2 class="skeleton">Loading the brief</h2>${skeletonLines(6)}`, onClose);
     try {
         const b = await api(`/api/cases/${id}?period=${encodeURIComponent(period || "")}`);
         panelBody().innerHTML = render(b);
@@ -46,6 +46,7 @@ function render(b) {
     ${communicationsSection(b)}
     ${trackRecordSection(b)}
     ${decisionSection(b)}
+    <section id="work-case"></section>
     <p class="disclaimer">Informational only, not tax advice.</p>`;
 }
 
@@ -184,6 +185,7 @@ function decisionSection(b) {
 
 function wire(b, period) {
     const root = panelBody();
+    import("./workbench.js").then(({ loadWorkbench }) => loadWorkbench(root.querySelector("#work-case"), b.row.id, b.row));
     root.querySelector("#brief-vendor")?.addEventListener("click", async () => {
         const { openVendor } = await import("./vendor.js");
         openVendor(b.row.vendorGstin);
@@ -212,7 +214,7 @@ function wire(b, period) {
             });
             banner(`Recorded: ${decision.toLowerCase()}. Vishwas will remember this and check it against the outcome.`, "info");
             document.dispatchEvent(new CustomEvent("vishwas:changed"));
-            openBrief(b.row.id, period);
+            openBrief(b.row.id, period, {});
         } catch (e) {
             banner(e.message);
             btn.disabled = false;

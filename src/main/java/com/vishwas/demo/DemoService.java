@@ -24,7 +24,7 @@ public class DemoService {
     private static final Logger log = LoggerFactory.getLogger(DemoService.class);
 
     /** Children before parents. The vendor master is re-seeded by the history loader. */
-    static final List<String> TABLES = List.of("recommendation", "advice_run", "accountant_action", "vendor_communication",
+    static final List<String> TABLES = List.of("close_signoff", "memory_correction", "reminder", "case_note", "case_file", "recommendation", "advice_run", "accountant_action", "vendor_communication",
             "mismatch", "invoice_record", "import_batch", "memory_batch", "vendor");
 
     public record ResetResult(boolean databaseCleared, boolean memoryCleared, String bankId, String message) {

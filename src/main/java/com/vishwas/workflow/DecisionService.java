@@ -24,13 +24,18 @@ public class DecisionService {
     private final MemoryPublisher publisher;
     private final Clock clock;
     private final String accountant;
+    private final com.vishwas.advisor.RecommendationRepository recommendations;
+    private final ActionCenterService actionCenter;
 
-    public DecisionService(LearningLoop learning, MemoryWriter writer, MemoryPublisher publisher, Clock clock, VishwasProperties props) {
+    public DecisionService(LearningLoop learning, MemoryWriter writer, MemoryPublisher publisher, Clock clock, VishwasProperties props,
+                           com.vishwas.advisor.RecommendationRepository recommendations, ActionCenterService actionCenter) {
         this.learning = learning;
         this.writer = writer;
         this.publisher = publisher;
         this.clock = clock;
         this.accountant = props.company().accountant();
+        this.recommendations = recommendations;
+        this.actionCenter = actionCenter;
     }
 
     public void decide(long recommendationId, Recommendation.Decision decision, Recommendation.Reason reason, String note,
@@ -39,5 +44,10 @@ public class DecisionService {
         MemoryWriter.DecisionEvent event = learning.decide(recommendationId, decision, reason, note, modifiedStep,
                 by == null || by.isBlank() ? accountant : by, now);
         publisher.publish("Decision " + Fmt.day(now), Fmt.period(now), List.of(writer.decision(event)));
+        // Approving an AUTO_RESOLVE applies the approved deterministic rule: audited and reversible.
+        recommendations.findById(recommendationId)
+                .filter(r -> decision == Recommendation.Decision.ACCEPTED && r.getCategory() == com.vishwas.advisor.Category.AUTO_RESOLVE
+                        && r.getRuleId() != null)
+                .ifPresent(r -> actionCenter.applyAutoResolve(r, by));
     }
 }

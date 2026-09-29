@@ -60,6 +60,19 @@ public class KnowledgePages {
         }
     }
 
+    /** The vendor's page node in the tree, if it exists yet. */
+    public Optional<KnowledgeNode> vendorNode(Vendor v) {
+        return hindsight.knowledgeTree(bankId).stream().filter(n -> FOLDER.equals(n.name())).flatMap(f -> f.childNodes().stream())
+                .filter(n -> "page".equals(n.kind()) && v.getLegalName().equals(n.name())).findFirst();
+    }
+
+    /** Regenerate the vendor's page from current memory (asynchronous on Hindsight's side). */
+    public Optional<String> refresh(Vendor v) {
+        ensureVendorPages(List.of(v));
+        return vendorNode(v).filter(n -> n.mentalModelId() != null)
+                .map(n -> hindsight.refreshMentalModel(bankId, n.mentalModelId()));
+    }
+
     /** The vendor's page (markdown with frontmatter), if it exists yet. */
     public Optional<KnowledgePage> vendorPage(Vendor v) {
         List<KnowledgeNode> roots = hindsight.knowledgeTree(bankId);

@@ -11,6 +11,7 @@ export async function openVendor(gstin, { highlight = [] } = {}) {
         panelBody().innerHTML = render(p, highlight);
         wire(p);
         loadLearned(p);
+        import("./curation.js").then(m => m.initVendorMemory(p));
         loadBeliefHistory(p.gstin, highlight[0] || firstInterestingDimension(p));
     } catch (e) {
         panelBody().innerHTML = `<div class="banner">${h(e.message)}</div>`;
@@ -49,6 +50,30 @@ function render(p, highlight) {
     </section>
 
     ${trackRecord(p.trackRecord)}
+
+    <section><h3>Knowledge page <span class="muted small">· Vendors/${h(p.legalName)}, written by Hindsight from this vendor's memory</span></h3>
+        <div class="form-row"><a class="secondary" style="text-decoration:none;display:inline-block" href="/api/vendors/${encodeURIComponent(p.gstin)}/dossier" download>Export vendor dossier</a>
+            <button class="secondary" id="page-refresh">Refresh page</button></div>
+        <div id="knowledge-page">${skeletonLines(2)}</div>
+    </section>
+
+    <section><h3>Letters and e-mails</h3>
+        <p class="note">Upload a vendor's letter or e-mail as PDF. It joins the vendor's thread and Hindsight reads its own words; a promised date is checked against the next GSTR-2B.</p>
+        <form id="letter-form" class="form-row">
+            <label class="field">PDF<input type="file" name="file" accept="application/pdf" required></label>
+            <label class="field">What it says<input name="summary" required maxlength="1000" style="min-width:280px" placeholder="Promises to file KPL/0631 by 10 Oct"></label>
+            <label class="field">Received<input type="date" name="receivedOn"></label>
+            <label class="field">Promised by<input type="date" name="promiseBy"></label>
+            <label class="field">Invoices<input name="invoices" placeholder="KPL/0631, KPL/0589"></label>
+            <button class="secondary" type="submit">Upload</button>
+        </form>
+    </section>
+
+    <section><h3>Correct this history</h3>
+        <p class="note">If memory holds something wrong about this vendor, correct the fact itself. Every change is audited
+            (who, when, why) and Hindsight rebuilds the vendor's beliefs from the corrected facts.</p>
+        <div id="curation">${skeletonLines(3)}</div>
+    </section>
 
     <section><h3>Timeline</h3>
         <ul class="timeline">${p.timeline.map(t => `<li class="${h(t.tone)}">
