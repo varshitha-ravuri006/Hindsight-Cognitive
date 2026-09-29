@@ -307,7 +307,8 @@ public class HistoryLoader {
         List<VendorCommunication> comms = communications.findAll();
         int kept = (int) comms.stream().filter(c -> c.getPromiseStatus() == VendorCommunication.PromiseStatus.KEPT).count();
         int broken = (int) comms.stream().filter(c -> c.getPromiseStatus() == VendorCommunication.PromiseStatus.BROKEN).count();
-        int recs = (int) recommendations.count();
+        Instant liveStart = cycleAt(SeedCatalog.HISTORY_PERIODS.get(SeedCatalog.HISTORY_PERIODS.size() - 1)).plus(java.time.Duration.ofDays(31));
+        int recs = (int) recommendations.findAll().stream().filter(r -> r.getCreatedAt().isBefore(liveStart)).count();
         BigDecimal open = history.stream().filter(m -> m.getStatus().open()).map(Mismatch::getExposure).reduce(BigDecimal.ZERO, BigDecimal::add);
         BigDecimal loss = history.stream().map(Mismatch::getConfirmedLoss).reduce(BigDecimal.ZERO, BigDecimal::add);
         BigDecimal recovered = history.stream().filter(m -> m.getStatus() == MismatchStatus.RESOLVED)

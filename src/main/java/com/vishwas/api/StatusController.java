@@ -36,10 +36,12 @@ public class StatusController {
     private final JdbcTemplate jdbc;
     private final VishwasProperties props;
     private final ExecutorService io;
+    private final com.vishwas.ingest.ImportBatchRepository batches;
 
     public StatusController(MemoryHealth memoryHealth, MemoryStats stats, MemoryPublisher publisher, BaselineAdvisor baseline,
                             HistoryLoader history, HindsightClient hindsight, GroqClient groq, JdbcTemplate jdbc,
-                            VishwasProperties props, ExecutorService ioExecutor) {
+                            VishwasProperties props, ExecutorService ioExecutor,
+                            com.vishwas.ingest.ImportBatchRepository batches) {
         this.memoryHealth = memoryHealth;
         this.stats = stats;
         this.publisher = publisher;
@@ -50,6 +52,7 @@ public class StatusController {
         this.jdbc = jdbc;
         this.props = props;
         this.io = ioExecutor;
+        this.batches = batches;
     }
 
     @GetMapping("/status")
@@ -67,6 +70,8 @@ public class StatusController {
         s.put("livePeriod", SeedCatalog.LIVE_PERIOD);
         s.put("nextPeriod", SeedCatalog.NEXT_PERIOD);
         s.put("resetEnabled", props.demo().resetEnabled());
+        s.put("imported", batches.findAllByOrderByPeriodAscSourceAsc().stream()
+                .map(b -> b.getPeriod() + ":" + b.getSource().name()).toList());
         return s;
     }
 

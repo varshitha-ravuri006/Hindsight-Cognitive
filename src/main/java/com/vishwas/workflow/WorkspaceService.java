@@ -53,19 +53,23 @@ public class WorkspaceService {
         }
     }
 
-    public record Workspace(String period, String periodLabel, Money money, List<VendorGroup> vendors, AdviceStatus advice) {
+    public record Workspace(String period, String periodLabel, Money money, List<VendorGroup> vendors, AdviceStatus advice,
+                            long booksRows, long gstr2bRows, long newMismatches) {
     }
 
     private final ReconcileService reconcile;
     private final AdviceService advice;
     private final AdviceRunRepository runs;
     private final MismatchRepository mismatches;
+    private final com.vishwas.ingest.InvoiceRecordRepository records;
 
-    public WorkspaceService(ReconcileService reconcile, AdviceService advice, AdviceRunRepository runs, MismatchRepository mismatches) {
+    public WorkspaceService(ReconcileService reconcile, AdviceService advice, AdviceRunRepository runs, MismatchRepository mismatches,
+                            com.vishwas.ingest.InvoiceRecordRepository records) {
         this.reconcile = reconcile;
         this.advice = advice;
         this.runs = runs;
         this.mismatches = mismatches;
+        this.records = records;
     }
 
     public Workspace workspace(String period) {
@@ -107,7 +111,10 @@ public class WorkspaceService {
         groups.sort(Comparator.comparing((VendorGroup g) -> Category.valueOf(g.strictestCategory()).ordinal()).reversed()
                 .thenComparing(VendorGroup::exposure, Comparator.reverseOrder()));
         AdviceRun run = runs.findFirstByPeriodOrderByStartedAtDesc(period).orElse(null);
-        return new Workspace(period, Fmt.month(period), money, groups, AdviceStatus.of(run));
+        return new Workspace(period, Fmt.month(period), money, groups, AdviceStatus.of(run),
+                records.countByPeriodAndSource(period, com.vishwas.ingest.InvoiceRow.Source.BOOKS),
+                records.countByPeriodAndSource(period, com.vishwas.ingest.InvoiceRow.Source.GSTR2B),
+                mismatches.countByPeriod(period));
     }
 
     public AdviceStatus adviceStatus(long runId) {
