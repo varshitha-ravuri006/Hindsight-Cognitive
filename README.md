@@ -33,6 +33,30 @@ Then the September GSTR-2B arrives (Step 4). Vishwas judges every August case ag
 appears (5 of 5 now), Kaveri's June invoice appears 3 months late while July stays at risk, Metro amends, Nandi's
 credit note settles. It records whether its own recommendations were right and updates its beliefs live.
 
+## How Vishwas uses Hindsight
+
+| Capability | What it does for the accountant | Where |
+|---|---|---|
+| Bank per client, missions, disposition (`PATCH /config`) | Reflect mission: protect ITC, remember each vendor per dimension, never over-trust history. Retain mission: what to extract. Skepticism 5, literalism 5. | `memory/MemoryDesign.java`, `memory/BankSetup.java` |
+| Directives (5) | Cite month, amount and outcome; separate history from confidence (<3 cases = thin); never a payment action; broken promises are evidence; weigh Vishwas's own track record. | `memory/MemoryDesign.java` |
+| Retain with backdated timestamps, context labels, stable document ids, metadata, tags `vendor:` `dim:` `type:` `period:` | Every event of the history (detections, outcomes, communications, recommendations, decisions) at the real date it happened. | `memory/MemoryWriter.java` |
+| Custom `observation_scopes` `[[vendor],[vendor,dim],[dim]]` | Beliefs per vendor, per vendor + dimension, and per dimension across vendors. | `memory/MemoryWriter.java#scopes` |
+| Explicit entities with `resolve_entities=false` | Sri Balaji Traders and Sri Balaji Enterprises never merge (tested). | `memory/MemoryWriter.java`, `SeedLoadIntegrationTest` |
+| `update_mode: "append"` | One document per vendor communication thread. | `memory/MemoryWriter.java#communication` |
+| `POST /files/retain` | Vendor letters (PDF) with the vendor's tags; two in the seed, more via upload. | `memory/hindsight/HindsightClient.java#retainFiles`, `workflow/LetterService.java` |
+| Async batch retain + `/operations` polling (webhook when public) | History load, one month per batch, waiting for consolidation so beliefs evolve. | `memory/HistoryMemoryLoader.java`, `api/WebhookController.java` |
+| Recall (observations, facts, `query_timestamp`, `temporal_window`) | "What Vishwas learned", the evidence drawer, the assistant's "what happened last month". | `memory/VendorMemory.java`, `assistant/AssistantTools.java` |
+| Reflect with `response_schema`, vendor-scoped tags, facts included, in parallel | One reflect per vendor with open cases: category, ranked cause hypotheses with evidence, next step, confidence. | `advisor/MemoryAdvisor.java`, `advisor/AdviceService.java` |
+| `GET /memories/{id}/history` | "How Vishwas's view of this vendor changed", month by month. | `memory/VendorMemory.java#beliefHistory` |
+| Mental models | "Money at risk briefing" and "Vendor watchlist", refreshed after each processed month. | `memory/MentalModels.java` |
+| Knowledge pages | `Vendors/<name>` per vendor, plus the vendor dossier export. | `memory/KnowledgePages.java`, `workflow/DossierService.java` |
+| Curation (`PATCH /memories/{id}`, state + reason; `/consolidate`) | "Correct this history": edit or invalidate a fact, audited, beliefs rebuilt. | `memory/CurationService.java` |
+| Experience learning loop | Recommendations, decisions (with reasons) and whether each proved right are retained; accuracy is computed in the DB. | `advisor/LearningLoop.java` |
+
+Every endpoint and field was checked against `hindsight-docs/static/openapi.json` (API v0.10.1).
+
+## Screens
+
 | | |
 |---|---|
 | ![Investigation brief](docs/screenshots/investigation-brief.png) | ![Vendor profile, dark theme](docs/screenshots/vendor-profile-dark.png) |
@@ -76,28 +100,6 @@ arithmetic, confidence and accuracy metric are deterministic Java over the datab
 database cannot: judgement over each vendor's history, the words of letters and promises, patterns across months,
 and Vishwas's own track record. Every rupee figure and case count a user sees comes from the ledger, so a
 recommendation never says "8 of 8" when the ledger says 4 of 4.
-
-## How Vishwas uses Hindsight
-
-| Capability | What it does for the accountant | Where |
-|---|---|---|
-| Bank per client, missions, disposition (`PATCH /config`) | Reflect mission: protect ITC, remember each vendor per dimension, never over-trust history. Retain mission: what to extract. Skepticism 5, literalism 5. | `memory/MemoryDesign.java`, `memory/BankSetup.java` |
-| Directives (5) | Cite month, amount and outcome; separate history from confidence (<3 cases = thin); never a payment action; broken promises are evidence; weigh Vishwas's own track record. | `memory/MemoryDesign.java` |
-| Retain with backdated timestamps, context labels, stable document ids, metadata, tags `vendor:` `dim:` `type:` `period:` | Every event of the history (detections, outcomes, communications, recommendations, decisions) at the real date it happened. | `memory/MemoryWriter.java` |
-| Custom `observation_scopes` `[[vendor],[vendor,dim],[dim]]` | Beliefs per vendor, per vendor + dimension, and per dimension across vendors. | `memory/MemoryWriter.java#scopes` |
-| Explicit entities with `resolve_entities=false` | Sri Balaji Traders and Sri Balaji Enterprises never merge (tested). | `memory/MemoryWriter.java`, `SeedLoadIntegrationTest` |
-| `update_mode: "append"` | One document per vendor communication thread. | `memory/MemoryWriter.java#communication` |
-| `POST /files/retain` | Vendor letters (PDF) with the vendor's tags; two in the seed, more via upload. | `memory/hindsight/HindsightClient.java#retainFiles`, `workflow/LetterService.java` |
-| Async batch retain + `/operations` polling (webhook when public) | History load, one month per batch, waiting for consolidation so beliefs evolve. | `memory/HistoryMemoryLoader.java`, `api/WebhookController.java` |
-| Recall (observations, facts, `query_timestamp`, `temporal_window`) | "What Vishwas learned", the evidence drawer, the assistant's "what happened last month". | `memory/VendorMemory.java`, `assistant/AssistantTools.java` |
-| Reflect with `response_schema`, vendor-scoped tags, facts included, in parallel | One reflect per vendor with open cases: category, ranked cause hypotheses with evidence, next step, confidence. | `advisor/MemoryAdvisor.java`, `advisor/AdviceService.java` |
-| `GET /memories/{id}/history` | "How Vishwas's view of this vendor changed", month by month. | `memory/VendorMemory.java#beliefHistory` |
-| Mental models | "Money at risk briefing" and "Vendor watchlist", refreshed after each processed month. | `memory/MentalModels.java` |
-| Knowledge pages | `Vendors/<name>` per vendor, plus the vendor dossier export. | `memory/KnowledgePages.java`, `workflow/DossierService.java` |
-| Curation (`PATCH /memories/{id}`, state + reason; `/consolidate`) | "Correct this history": edit or invalidate a fact, audited, beliefs rebuilt. | `memory/CurationService.java` |
-| Experience learning loop | Recommendations, decisions (with reasons) and whether each proved right are retained; accuracy is computed in the DB. | `advisor/LearningLoop.java` |
-
-Every endpoint and field was checked against `hindsight-docs/static/openapi.json` (API v0.10.1).
 
 ## Run it locally
 
@@ -170,6 +172,22 @@ schema. GST rates are 5% and 18%, since the 12% slab was merged in the September
 
 `ingest` → `matching` → `outcomes` → `memory` → `advisor` → `workflow` → `assistant` → `api` → `web`, plus `config`,
 `llm` and `demo`. Ownership, dependency rules and how to add things are in [CONTRIBUTING.md](CONTRIBUTING.md).
+
+## Known limitations
+
+- **Docker image build not verified.** The multi-stage `Dockerfile` has not been built on the development machine
+  yet (Docker was not running); `mvn package` and `java -jar` are what has been tested.
+- **Thin-history categories can vary between runs.** For vendors with fewer than 3 past cases on a dimension
+  (e.g. Metro Logistics and Nandi Electricals, 2 cases each), memory's category can come back as Recommend in one
+  run and Review in another. Guardrails still apply (duplicates always escalate, auto-resolve only via the approved
+  rule, material exposure with thin history is lifted to Review), and confidence is shown as thin.
+- **Counts and amounts come from the ledger, not from memory's wording.** Hindsight's consolidated observations
+  sometimes over-count (one invoice's several facts read as several cases). Every number on cards, headlines,
+  money totals and the accuracy metric is computed from the database; memory's own text is labelled as such.
+- **Timings depend on Hindsight Cloud:** history load took 7 to 18 minutes, reconcile + advice 13 to 18 s, and the
+  post-September belief update about 2 minutes in our runs. Hence the night-before `prepare-demo` script and the
+  offline replay.
+- Simplified GSTR-2B format (not the portal schema) and fictional sample data only.
 
 ## Roadmap
 
