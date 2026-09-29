@@ -364,3 +364,15 @@ dialog::backdrop { background: rgba(10, 14, 20, .4); }
 .fact-row { display: grid; grid-template-columns: 1fr auto; gap: 8px; padding: 8px 0; border-bottom: 1px solid var(--line); font-size: .88rem; }
 .fact-row.invalidated { opacity: .55; text-decoration: line-through; }
 .email-box textarea { width: 100%; min-height: 220px; font-family: var(--font); }
+.ask-row { display: flex; gap: 8px; }
+.ask-row input { flex: 1; font: inherit; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); }
+.examples { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0; }
+.examples button { border: 1px solid var(--line); background: var(--surface-2); border-radius: 99px; padding: 5px 12px; cursor: pointer; color: var(--ink-2); font-size: .86rem; }
+.records a { text-decoration: none; }
+.check { display: grid; grid-template-columns: 28px 1fr 180px; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--line); align-items: start; }
+.check .icon { width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; font-weight: 700; }
+.check .icon.done { background: var(--good-soft); color: var(--good); }
+.check .icon.todo { background: var(--warn-soft); color: var(--warn); }
+.close-state { padding: 10px 14px; border-radius: 10px; margin: 8px 0 14px; font-weight: 600; }
+.close-state.ready { background: var(--good-soft); color: var(--good); }
+.close-state.blocked { background: var(--warn-soft); color: var(--warn); }

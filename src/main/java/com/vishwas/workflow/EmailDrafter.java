@@ -68,7 +68,7 @@ public class EmailDrafter {
         return Optional.empty();
     }
 
-    Draft template(Vendor vendor, List<Mismatch> cases) {
+    public Draft template(Vendor vendor, List<Mismatch> cases) {
         String subject = "GSTR-1 follow-up: " + cases.size() + " invoice" + (cases.size() == 1 ? "" : "s") + " for "
                 + props.company().legalName();
         String body = "Dear " + (vendor.getContactPerson() == null ? "Sir/Madam" : vendor.getContactPerson()) + ",\n\n"
