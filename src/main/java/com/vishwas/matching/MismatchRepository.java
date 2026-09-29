@@ -20,4 +20,7 @@ public interface MismatchRepository extends JpaRepository<Mismatch, Long> {
     List<Mismatch> findAllByOrderByDetectedAtAscIdAsc();
 
     long countByPeriod(String period);
+
+    @org.springframework.data.jpa.repository.Query("select m.evidenceRecordId from Mismatch m where m.evidenceRecordId is not null")
+    List<Long> findEvidenceRecordIds();
 }

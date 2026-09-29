@@ -1,0 +1,136 @@
+[ {
+  "gstin" : "36ABKFS2231Q1ZP",
+  "legal_name" : "Sri Balaji Traders",
+  "city" : "Begum Bazar, Hyderabad",
+  "state_code" : "36",
+  "email" : "accounts@sribalajitraders.example",
+  "contact_person" : "P. Venkatesh",
+  "phone" : "+91 40 2461 3378",
+  "supplies" : "Switches, sockets and MCBs (HSN 8536, 18%)"
+}, {
+  "gstin" : "36ADSFS7710L1ZD",
+  "legal_name" : "Sri Balaji Enterprises",
+  "city" : "Secunderabad",
+  "state_code" : "36",
+  "email" : "billing@sribalajient.example",
+  "contact_person" : "K. Ramesh",
+  "phone" : "+91 40 2780 5521",
+  "supplies" : "Sheet-metal cabinet parts (HSN 7326, 18%)"
+}, {
+  "gstin" : "29AAHCK5512D1ZO",
+  "legal_name" : "Kaveri Packaging Pvt Ltd",
+  "city" : "Peenya, Bengaluru",
+  "state_code" : "29",
+  "email" : "finance@kaveripackaging.example",
+  "contact_person" : "R. Manjunath",
+  "phone" : "+91 80 2839 4410",
+  "supplies" : "Corrugated cartons (HSN 4819, 18%)"
+}, {
+  "gstin" : "37AACCG3309R1Z8",
+  "legal_name" : "Godavari Steel Industries Ltd",
+  "city" : "Visakhapatnam",
+  "state_code" : "37",
+  "email" : "sales@godavaristeel.example",
+  "contact_person" : "S. Rao",
+  "phone" : "+91 891 256 7710",
+  "supplies" : "CRCA steel sheets (HSN 7209, 18%)"
+}, {
+  "gstin" : "36AAPFM8841E1ZX",
+  "legal_name" : "Metro Logistics",
+  "city" : "Kukatpally, Hyderabad",
+  "state_code" : "36",
+  "email" : "accounts@metrologistics.example",
+  "contact_person" : "K. Srikanth",
+  "phone" : "+91 40 2305 8841",
+  "supplies" : "Road freight (GTA) (HSN 9965, 5%)"
+}, {
+  "gstin" : "29AAJCN6620H1Z8",
+  "legal_name" : "Nandi Electricals Pvt Ltd",
+  "city" : "Doddaballapur, Bengaluru",
+  "state_code" : "29",
+  "email" : "ar@nandielectricals.example",
+  "contact_person" : "A. Gowda",
+  "phone" : "+91 80 2762 6620",
+  "supplies" : "Fan motors and capacitors (HSN 8501, 18%)"
+}, {
+  "gstin" : "36AAKFC1914B1ZY",
+  "legal_name" : "Charminar Fasteners",
+  "city" : "Balanagar, Hyderabad",
+  "state_code" : "36",
+  "email" : "office@charminarfasteners.example",
+  "contact_person" : "M. Iqbal",
+  "phone" : "+91 40 2377 1914",
+  "supplies" : "Screws, nuts and washers (HSN 7318, 18%)"
+}, {
+  "gstin" : "36AAECD7305N1ZF",
+  "legal_name" : "Deccan Copper Wires Pvt Ltd",
+  "city" : "Cherlapally, Hyderabad",
+  "state_code" : "36",
+  "email" : "accounts@deccancopper.example",
+  "contact_person" : "V. Naidu",
+  "phone" : "+91 40 2726 7305",
+  "supplies" : "Enamelled copper winding wire (HSN 7408, 18%)"
+}, {
+  "gstin" : "37ABBFK4471C1ZJ",
+  "legal_name" : "Krishna Polymers",
+  "city" : "Vijayawada",
+  "state_code" : "37",
+  "email" : "sales@krishnapolymers.example",
+  "contact_person" : "B. Krishna",
+  "phone" : "+91 866 247 4471",
+  "supplies" : "Polypropylene granules (HSN 3902, 18%)"
+}, {
+  "gstin" : "29AADCT2256K1Z1",
+  "legal_name" : "Tungabhadra Motors Pvt Ltd",
+  "city" : "Hospet",
+  "state_code" : "29",
+  "email" : "finance@tungabhadramotors.example",
+  "contact_person" : "N. Hegde",
+  "phone" : "+91 8394 22 2256",
+  "supplies" : "Mixer-grinder motors (HSN 8501, 18%)"
+}, {
+  "gstin" : "33AACCC9087F1ZM",
+  "legal_name" : "Coromandel Plastics Pvt Ltd",
+  "city" : "Ambattur, Chennai",
+  "state_code" : "33",
+  "email" : "ar@coromandelplastics.example",
+  "contact_person" : "S. Iyer",
+  "phone" : "+91 44 2625 9087",
+  "supplies" : "Injection-moulded housings (HSN 3926, 18%)"
+}, {
+  "gstin" : "36AAFFH3390J1Z7",
+  "legal_name" : "Hyderabad Rubber Works",
+  "city" : "Jeedimetla, Hyderabad",
+  "state_code" : "36",
+  "email" : "hrw.accounts@hydrubber.example",
+  "contact_person" : "G. Reddy",
+  "phone" : "+91 40 2309 3390",
+  "supplies" : "Rubber gaskets and seals (HSN 4016, 18%)"
+}, {
+  "gstin" : "27AAGCP5528G1ZA",
+  "legal_name" : "Pune Precision Components Pvt Ltd",
+  "city" : "Chakan, Pune",
+  "state_code" : "27",
+  "email" : "billing@puneprecision.example",
+  "contact_person" : "A. Kulkarni",
+  "phone" : "+91 20 2745 5528",
+  "supplies" : "Machined shafts and bushes (HSN 8483, 18%)"
+}, {
+  "gstin" : "36AAKFG7719P1ZM",
+  "legal_name" : "Golconda IT Services LLP",
+  "city" : "Madhapur, Hyderabad",
+  "state_code" : "36",
+  "email" : "billing@golcondait.example",
+  "contact_person" : "R. Sharma",
+  "phone" : "+91 40 4012 7719",
+  "supplies" : "IT support and AMC (HSN 998313, 18%)"
+}, {
+  "gstin" : "27ABAFS6604M1ZX",
+  "legal_name" : "Sahyadri Foam Industries",
+  "city" : "Bhosari, Pune",
+  "state_code" : "27",
+  "email" : "accounts@sahyadrifoam.example",
+  "contact_person" : "P. Deshmukh",
+  "phone" : "+91 20 2712 6604",
+  "supplies" : "PU foam inserts (HSN 3921, 18%)"
+} ]

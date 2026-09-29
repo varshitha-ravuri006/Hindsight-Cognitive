@@ -107,6 +107,9 @@ public class Mismatch {
     @Column(length = 500)
     private String verdictNote;
 
+    /** The later invoice row that proved the verdict (it is then not reconciled again as a new row). */
+    private Long evidenceRecordId;
+
     protected Mismatch() {
     }
 
@@ -144,7 +147,11 @@ public class Mismatch {
     }
 
     /** Record a verdict. Terminal outcomes resolve the case; UNRESOLVED_AT_RISK keeps it open. */
-    public void judge(Outcome outcome, String judgedInPeriod, Instant at, Integer monthsLate, BigDecimal recovered, String note) {
+    public void judge(Outcome outcome, String judgedInPeriod, Instant at, Integer monthsLate, BigDecimal recovered, String note,
+                      Long evidenceRecordId) {
+        if (evidenceRecordId != null && evidenceRecordId != 0) {
+            this.evidenceRecordId = evidenceRecordId;
+        }
         this.verdict = outcome;
         this.verdictPeriod = judgedInPeriod;
         this.verdictAt = at;
@@ -158,12 +165,13 @@ public class Mismatch {
         }
     }
 
-    /** The accountant reversed the ITC: the open exposure becomes a confirmed loss. */
+    /**
+     * The accountant reversed the ITC: the open exposure becomes a confirmed loss. The verdict that led here
+     * (usually UNRESOLVED_AT_RISK) and its date are kept; the write-off itself is an accountant action.
+     */
     public void writeOff(Instant at, String note) {
         this.status = MismatchStatus.WRITTEN_OFF;
         this.confirmedLoss = exposure;
-        this.verdictAt = at;
-        this.verdictNote = note;
     }
 
     /** Undo a verdict (used when an auto-resolution is reversed). */
@@ -175,6 +183,11 @@ public class Mismatch {
         this.monthsLate = null;
         this.recoveredAmount = BigDecimal.ZERO;
         this.verdictNote = null;
+        this.evidenceRecordId = null;
+    }
+
+    public Long getEvidenceRecordId() {
+        return evidenceRecordId;
     }
 
     public void linkTo(Long mismatchId) {

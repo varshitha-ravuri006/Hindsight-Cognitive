@@ -44,7 +44,11 @@ and implement it above, or move the shared type down.
 
 - Seed data: `src/main/resources/seed/` (purchase registers, simplified GSTR-2B JSON, journal of past
   communications and decisions, vendor letters as PDF). The simplified GSTR-2B format is documented in
-  `docs/gstr2b-simplified.md`; it is **not** the GST portal schema.
+  `docs/gstr2b-simplified.md`; it is **not** the GST portal schema. The invoice files and letters are
+  generated deterministically by `src/test/java/com/vishwas/tools/SeedGenerator.java` (the story of each
+  vendor is written out there); `journal.json` is hand-written. Regenerate with
+  `mvn -q test-compile exec:java -Dexec.mainClass=com.vishwas.tools.SeedGenerator -Dexec.classpathScope=test`
+  and keep `SeedScenarioTest` green: it replays the story and asserts every vendor behaves as designed.
 - Memory design (missions, directives, mental models): `memory/MemoryDesign.java`. Tune wording there.
 - Tunables (tolerances, at-risk months, materiality, approved auto-resolve rules): `application.yml`
   under `vishwas.*`, mirrored in `config/VishwasProperties.java`.

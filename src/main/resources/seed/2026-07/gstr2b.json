@@ -1,0 +1,340 @@
+{
+  "format" : "vishwas-gstr2b-simplified/1",
+  "disclaimer" : "Simplified GSTR-2B for Vishwas sample data. Not the GST portal schema.",
+  "recipient_gstin" : "36AAGCD4821M1ZG",
+  "return_period" : "2026-07",
+  "generated_on" : "2026-08-14",
+  "b2b" : [ {
+    "supplier_gstin" : "27AAGCP5528G1ZA",
+    "supplier_name" : "Pune Precision Components Pvt Ltd",
+    "gstr1_period" : "2026-07",
+    "gstr1_filed_on" : "2026-08-11",
+    "invoices" : [ {
+      "invoice_no" : "PPC/26-27/0363",
+      "invoice_date" : "2026-07-12",
+      "place_of_supply" : "36",
+      "taxable_value" : 106000.00,
+      "rate" : 18,
+      "igst" : 19080.00,
+      "cgst" : 0.00,
+      "sgst" : 0.00
+    } ]
+  }, {
+    "supplier_gstin" : "27ABAFS6604M1ZX",
+    "supplier_name" : "Sahyadri Foam Industries",
+    "gstr1_period" : "2026-07",
+    "gstr1_filed_on" : "2026-08-11",
+    "invoices" : [ {
+      "invoice_no" : "SFI/555",
+      "invoice_date" : "2026-07-18",
+      "place_of_supply" : "36",
+      "taxable_value" : 38500.00,
+      "rate" : 18,
+      "igst" : 6930.00,
+      "cgst" : 0.00,
+      "sgst" : 0.00
+    }, {
+      "invoice_no" : "SFI/552",
+      "invoice_date" : "2026-07-23",
+      "place_of_supply" : "36",
+      "taxable_value" : 41500.00,
+      "rate" : 18,
+      "igst" : 7470.00,
+      "cgst" : 0.00,
+      "sgst" : 0.00
+    } ]
+  }, {
+    "supplier_gstin" : "29AADCT2256K1Z1",
+    "supplier_name" : "Tungabhadra Motors Pvt Ltd",
+    "gstr1_period" : "2026-07",
+    "gstr1_filed_on" : "2026-08-11",
+    "invoices" : [ {
+      "invoice_no" : "TMP/5509",
+      "invoice_date" : "2026-07-08",
+      "place_of_supply" : "36",
+      "taxable_value" : 125000.00,
+      "rate" : 18,
+      "igst" : 22500.00,
+      "cgst" : 0.00,
+      "sgst" : 0.00
+    }, {
+      "invoice_no" : "TMP/5513",
+      "invoice_date" : "2026-07-21",
+      "place_of_supply" : "36",
+      "taxable_value" : 99000.00,
+      "rate" : 18,
+      "igst" : 17820.00,
+      "cgst" : 0.00,
+      "sgst" : 0.00
+    } ]
+  }, {
+    "supplier_gstin" : "29AAHCK5512D1ZO",
+    "supplier_name" : "Kaveri Packaging Pvt Ltd",
+    "gstr1_period" : "2026-07",
+    "gstr1_filed_on" : "2026-08-11",
+    "invoices" : [ {
+      "invoice_no" : "KPL/0574",
+      "invoice_date" : "2026-07-03",
+      "place_of_supply" : "36",
+      "taxable_value" : 58500.00,
+      "rate" : 18,
+      "igst" : 10530.00,
+      "cgst" : 0.00,
+      "sgst" : 0.00
+    } ]
+  }, {
+    "supplier_gstin" : "29AAJCN6620H1Z8",
+    "supplier_name" : "Nandi Electricals Pvt Ltd",
+    "gstr1_period" : "2026-07",
+    "gstr1_filed_on" : "2026-08-11",
+    "invoices" : [ {
+      "invoice_no" : "NEL/7815",
+      "invoice_date" : "2026-07-14",
+      "place_of_supply" : "36",
+      "taxable_value" : 182000.00,
+      "rate" : 18,
+      "igst" : 32760.00,
+      "cgst" : 0.00,
+      "sgst" : 0.00
+    } ]
+  }, {
+    "supplier_gstin" : "33AACCC9087F1ZM",
+    "supplier_name" : "Coromandel Plastics Pvt Ltd",
+    "gstr1_period" : "2026-07",
+    "gstr1_filed_on" : "2026-08-11",
+    "invoices" : [ {
+      "invoice_no" : "CPL/4475",
+      "invoice_date" : "2026-07-04",
+      "place_of_supply" : "36",
+      "taxable_value" : 126000.00,
+      "rate" : 18,
+      "igst" : 22680.00,
+      "cgst" : 0.00,
+      "sgst" : 0.00
+    }, {
+      "invoice_no" : "CPL/4472",
+      "invoice_date" : "2026-07-18",
+      "place_of_supply" : "36",
+      "taxable_value" : 133500.00,
+      "rate" : 18,
+      "igst" : 24030.00,
+      "cgst" : 0.00,
+      "sgst" : 0.00
+    } ]
+  }, {
+    "supplier_gstin" : "36AAECD7305N1ZF",
+    "supplier_name" : "Deccan Copper Wires Pvt Ltd",
+    "gstr1_period" : "2026-07",
+    "gstr1_filed_on" : "2026-08-11",
+    "invoices" : [ {
+      "invoice_no" : "DCW/2026/1154",
+      "invoice_date" : "2026-07-25",
+      "place_of_supply" : "36",
+      "taxable_value" : 198000.00,
+      "rate" : 18,
+      "igst" : 0.00,
+      "cgst" : 17820.00,
+      "sgst" : 17820.00
+    } ]
+  }, {
+    "supplier_gstin" : "36AAFFH3390J1Z7",
+    "supplier_name" : "Hyderabad Rubber Works",
+    "gstr1_period" : "2026-07",
+    "gstr1_filed_on" : "2026-08-11",
+    "invoices" : [ {
+      "invoice_no" : "HRW/241",
+      "invoice_date" : "2026-07-05",
+      "place_of_supply" : "36",
+      "taxable_value" : 36000.00,
+      "rate" : 18,
+      "igst" : 0.00,
+      "cgst" : 3240.00,
+      "sgst" : 3240.00
+    } ]
+  }, {
+    "supplier_gstin" : "36AAKFC1914B1ZY",
+    "supplier_name" : "Charminar Fasteners",
+    "gstr1_period" : "2026-07",
+    "gstr1_filed_on" : "2026-08-11",
+    "invoices" : [ {
+      "invoice_no" : "CFP/3303",
+      "invoice_date" : "2026-07-08",
+      "place_of_supply" : "36",
+      "taxable_value" : 51000.00,
+      "rate" : 18,
+      "igst" : 0.00,
+      "cgst" : 4590.00,
+      "sgst" : 4590.00
+    } ]
+  }, {
+    "supplier_gstin" : "36AAKFG7719P1ZM",
+    "supplier_name" : "Golconda IT Services LLP",
+    "gstr1_period" : "2026-07",
+    "gstr1_filed_on" : "2026-08-11",
+    "invoices" : [ {
+      "invoice_no" : "GIS/26-27/066",
+      "invoice_date" : "2026-07-25",
+      "place_of_supply" : "36",
+      "taxable_value" : 38500.00,
+      "rate" : 18,
+      "igst" : 0.00,
+      "cgst" : 3465.00,
+      "sgst" : 3465.00
+    } ]
+  }, {
+    "supplier_gstin" : "36AAPFM8841E1ZX",
+    "supplier_name" : "Metro Logistics",
+    "gstr1_period" : "2026-07",
+    "gstr1_filed_on" : "2026-08-11",
+    "invoices" : [ {
+      "invoice_no" : "MLS/1092",
+      "invoice_date" : "2026-07-08",
+      "place_of_supply" : "36",
+      "taxable_value" : 29000.00,
+      "rate" : 5,
+      "igst" : 0.00,
+      "cgst" : 725.00,
+      "sgst" : 725.00
+    }, {
+      "invoice_no" : "MLS/1104",
+      "invoice_date" : "2026-07-22",
+      "place_of_supply" : "36",
+      "taxable_value" : 38500.00,
+      "rate" : 5,
+      "igst" : 0.00,
+      "cgst" : 962.50,
+      "sgst" : 962.50
+    } ]
+  }, {
+    "supplier_gstin" : "36ABKFS2231Q1ZP",
+    "supplier_name" : "Sri Balaji Traders",
+    "gstr1_period" : "2026-07",
+    "gstr1_filed_on" : "2026-08-11",
+    "invoices" : [ {
+      "invoice_no" : "SBT/2026/0079",
+      "invoice_date" : "2026-06-27",
+      "place_of_supply" : "36",
+      "taxable_value" : 68900.00,
+      "rate" : 18,
+      "igst" : 0.00,
+      "cgst" : 6201.00,
+      "sgst" : 6201.00
+    }, {
+      "invoice_no" : "SBT/2026/0086",
+      "invoice_date" : "2026-07-04",
+      "place_of_supply" : "36",
+      "taxable_value" : 91500.00,
+      "rate" : 18,
+      "igst" : 0.00,
+      "cgst" : 8235.00,
+      "sgst" : 8235.00
+    }, {
+      "invoice_no" : "SBT/2026/0093",
+      "invoice_date" : "2026-07-15",
+      "place_of_supply" : "36",
+      "taxable_value" : 57700.00,
+      "rate" : 18,
+      "igst" : 0.00,
+      "cgst" : 5193.00,
+      "sgst" : 5193.00
+    }, {
+      "invoice_no" : "SBT/2026/0101",
+      "invoice_date" : "2026-07-24",
+      "place_of_supply" : "36",
+      "taxable_value" : 66000.00,
+      "rate" : 18,
+      "igst" : 0.00,
+      "cgst" : 5940.00,
+      "sgst" : 5940.00
+    } ]
+  }, {
+    "supplier_gstin" : "36ADSFS7710L1ZD",
+    "supplier_name" : "Sri Balaji Enterprises",
+    "gstr1_period" : "2026-07",
+    "gstr1_filed_on" : "2026-08-11",
+    "invoices" : [ {
+      "invoice_no" : "SBE-2266",
+      "invoice_date" : "2026-07-09",
+      "place_of_supply" : "36",
+      "taxable_value" : 121000.00,
+      "rate" : 18,
+      "igst" : 0.00,
+      "cgst" : 10890.00,
+      "sgst" : 10890.00
+    }, {
+      "invoice_no" : "SBE-2278",
+      "invoice_date" : "2026-07-23",
+      "place_of_supply" : "36",
+      "taxable_value" : 99500.00,
+      "rate" : 18,
+      "igst" : 0.00,
+      "cgst" : 8955.00,
+      "sgst" : 8955.00
+    } ]
+  }, {
+    "supplier_gstin" : "37AACCG3309R1Z8",
+    "supplier_name" : "Godavari Steel Industries Ltd",
+    "gstr1_period" : "2026-07",
+    "gstr1_filed_on" : "2026-08-11",
+    "invoices" : [ {
+      "invoice_no" : "INV/26-27/0102",
+      "invoice_date" : "2026-07-09",
+      "place_of_supply" : "36",
+      "taxable_value" : 341000.00,
+      "rate" : 18,
+      "igst" : 61380.00,
+      "cgst" : 0.00,
+      "sgst" : 0.00
+    } ]
+  }, {
+    "supplier_gstin" : "37ABBFK4471C1ZJ",
+    "supplier_name" : "Krishna Polymers",
+    "gstr1_period" : "2026-07",
+    "gstr1_filed_on" : "2026-08-11",
+    "invoices" : [ {
+      "invoice_no" : "KP/26-27/077",
+      "invoice_date" : "2026-07-11",
+      "place_of_supply" : "36",
+      "taxable_value" : 97500.00,
+      "rate" : 18,
+      "igst" : 17550.00,
+      "cgst" : 0.00,
+      "sgst" : 0.00
+    } ]
+  } ],
+  "b2ba" : [ {
+    "supplier_gstin" : "36AAPFM8841E1ZX",
+    "supplier_name" : "Metro Logistics",
+    "gstr1_period" : "2026-07",
+    "gstr1_filed_on" : "2026-08-11",
+    "invoices" : [ {
+      "original_invoice_no" : "MLS/1077",
+      "original_invoice_date" : "2026-06-20",
+      "invoice_no" : "MLS/1077",
+      "invoice_date" : "2026-06-20",
+      "place_of_supply" : "36",
+      "taxable_value" : 42000.00,
+      "rate" : 5,
+      "igst" : 0.00,
+      "cgst" : 1050.00,
+      "sgst" : 1050.00
+    } ]
+  } ],
+  "cdnr" : [ {
+    "supplier_gstin" : "29AAJCN6620H1Z8",
+    "supplier_name" : "Nandi Electricals Pvt Ltd",
+    "gstr1_period" : "2026-07",
+    "gstr1_filed_on" : "2026-08-11",
+    "notes" : [ {
+      "note_type" : "C",
+      "note_no" : "NEL/CN/038",
+      "note_date" : "2026-07-12",
+      "original_invoice_no" : "NEL/7788",
+      "taxable_value" : 6500.00,
+      "rate" : 18,
+      "igst" : 1170.00,
+      "cgst" : 0.00,
+      "sgst" : 0.00
+    } ]
+  } ]
+}
