@@ -1,6 +1,13 @@
 # Vishwas
 
 **Reconciliation tools find the mismatch. Vishwas remembers what it turned out to be.**
+***Articles***
+1)https://masetti07.substack.com/p/when-the-accountant-goes-on-leave?r=96ax15&utm_campaign=post&utm_medium=web&showWelcomeOnShare=true
+2)https://medium.com/@2420030536cse/turning-a-vendors-broken-promise-into-hindsight-evidence-6a02723964f7
+3)https://dev.to/lavanya_k_763cf9ef4813e9f/hindsight-made-my-gst-agent-remember-vendors-4gj9
+
+Video:
+https://www.youtube.com/watch?v=ujmvsht5EuY&feature=youtu.be
 
 Vishwas ("trust") is a GST reconciliation workspace for Indian finance teams. Every month the accountant matches the
 purchase register against GSTR-2B and gets a list of mismatches. A rule-based tool gives the same textbook action
